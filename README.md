@@ -40,7 +40,11 @@ export function registerClientModules () {
 Add the endpoint to your config
 ```json
   "braintree" : {
-    "endpoint": "http://localhost:8080/api/ext/braintree"
+    "endpoint": "http://localhost:8080/api/ext/braintree",
+    "applePay": {
+      "displayName": "Business name",
+      "label": "Canonical name for your store"
+    }
   },
 ```
 

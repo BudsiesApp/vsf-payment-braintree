@@ -4,6 +4,7 @@
 
 <script>
 import { currentStoreView } from '@vue-storefront/core/lib/multistore'
+import config from 'config'
 
 export default {
   name: 'BraintreeDropin',
@@ -40,6 +41,16 @@ export default {
             flow: 'checkout',
             amount: this.getTransactions().amount.total,
             currency: this.getTransactions().amount.currency
+          },
+          applePay: {
+            displayName: config.braintree.applePay.displayName,
+            paymentRequest: {
+              total: {
+                label: config.braintree.applePay.label,
+                amount: this.getTransactions().amount.total
+              },
+              requiredBillingContactFields: ['postalAddress']
+            }
           }
         }).then((dropinInstance) => {
           button.addEventListener('click', () => {
@@ -51,12 +62,10 @@ export default {
                     // Submit payload.nonce to your server
                     self.nonce = payload.nonce
                     console.error('success')
-                    // when payment made through 'paypal through braintree' update payment method to 'braintree_paypal'
-                    if(payload.type === "PayPalAccount"){
-                      self.$store.state.checkout.paymentDetails.paymentMethod="braintree_paypal"
-                    }
+
                     self.$bus.$emit('checkout-do-placeOrder', {
-                      payment_method_nonce: self.nonce
+                      payment_method_nonce: self.nonce,
+                      budsies_payment_method_code: this.getPaymentMethodCode(payload.type)
                     })
                   } else {
                     console.error(err)
@@ -81,6 +90,18 @@ export default {
     },
     getNonce () {
       return { nonce: this.nonce, total: this.grandTotal, currency: this.currency }
+    },
+    getPaymentMethodCode (payloadType) {
+      switch (payloadType) {
+        case 'PayPalAccount':
+          return 'genebraintree_paypal';
+        case 'CreditCard':
+          return 'gene_braintree_creditcard';
+        case 'ApplePayCard':
+          return 'gene_braintree_applepay';
+        default:
+          return null;
+      }
     },
     doPayment (data, actions) {
       return this.$store.dispatch('braintree/doPayment', this.getNonce())

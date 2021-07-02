@@ -9,7 +9,7 @@ module.exports = ({ config, db }) => {
   let env = config.extensions.braintree.mode === 'sandbox' ? braintree.Environment.Sandbox : braintree.Environment.Production
 
   api.get('/get-token', (req, res) => {
-    var gateway = braintree.connect({
+    var gateway = new braintree.BraintreeGateway({
       environment: env,
       merchantId: config.extensions.braintree.merchantId,
       publicKey: config.extensions.braintree.publicKey,
@@ -29,7 +29,7 @@ module.exports = ({ config, db }) => {
     var reqB = req.body;
     console.log(reqB)
     console.log(reqB.nonce)
-    var gateway = braintree.connect({
+    var gateway = new braintree.BraintreeGateway({
       environment: env,
       merchantId: config.extensions.braintree.merchantId,
       publicKey: config.extensions.braintree.publicKey,
