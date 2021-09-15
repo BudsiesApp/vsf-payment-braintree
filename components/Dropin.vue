@@ -94,7 +94,7 @@ export default {
     getPaymentMethodCode (payloadType) {
       switch (payloadType) {
         case 'PayPalAccount':
-          return 'genebraintree_paypal';
+          return 'gene_braintree_paypal';
         case 'CreditCard':
           return 'gene_braintree_creditcard';
         case 'ApplePayCard':
