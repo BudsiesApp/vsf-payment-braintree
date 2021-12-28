@@ -59,7 +59,7 @@ export default {
                 dropinInstance.requestPaymentMethod((err, payload) => {
                   if (err) {
                     console.error(err)
-                    return;
+                    return
                   }
 
                   // Submit payload.nonce to your server
