@@ -57,23 +57,18 @@ export default {
             if (dropinInstance.isPaymentMethodRequestable()) {
               setTimeout(() => {
                 dropinInstance.requestPaymentMethod((err, payload) => {
-                  if (!err) {
-                    console.debug(payload)
-                    // Submit payload.nonce to your server
-                    self.nonce = payload.nonce
-                    console.error('success')
-
-                    self.$bus.$emit('checkout-do-placeOrder', {
-                      payment_method_nonce: self.nonce,
-                      budsies_payment_method_code: this.getPaymentMethodCode(payload.type)
-                    })
-                  } else {
+                  if (err) {
                     console.error(err)
+                    return
                   }
-                }).catch((requestPaymentMethodErr) => {
-                  // No payment method is available.
-                  // An appropriate error will be shown in the UI.
-                  console.error(requestPaymentMethodErr)
+
+                  // Submit payload.nonce to your server
+                  self.nonce = payload.nonce
+
+                  self.$bus.$emit('checkout-do-placeOrder', {
+                    payment_method_nonce: self.nonce,
+                    budsies_payment_method_code: this.getPaymentMethodCode(payload.type)
+                  })
                 })
               }, 400)
             }
