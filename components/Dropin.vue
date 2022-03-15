@@ -134,13 +134,11 @@ export default {
           this.configureCard(token)
         ]);
 
-        dropinInstances.push(applePayInstance);
+        if (applePayInstance) {
+          dropinInstances.push(applePayInstance);
+        }
 
         dropinInstances.forEach((instance) => {
-          if (!instance) {
-            return;
-          }
-
           this.onDropinInstanceCreated(instance);
         });
 
@@ -210,8 +208,8 @@ export default {
 
               this.nonce = payload.nonce
 
-              self.$bus.$emit('checkout-do-placeOrder', {
-                payment_method_nonce: self.nonce,
+              this.$bus.$emit('checkout-do-placeOrder', {
+                payment_method_nonce: this.nonce,
                 budsies_payment_method_code: this.getPaymentMethodCode(payload.type)
               })
             })
@@ -220,7 +218,7 @@ export default {
       };
 
       this.buttonClickHandlers.push(handler);
-      this.getPlaceOrderButton.addEventListener('click', handler)
+      this.getPlaceOrderButton().addEventListener('click', handler)
     },
     isMethodSelected (methodCode) {
       return this.selectedPaymentMethod === methodCode;
@@ -280,6 +278,12 @@ $loader-size: 2em;
       border: 2px solid var(--c-secondary);
       border-bottom-color: var(--c-primary);
       animation: rotate 1s linear infinite;
+    }
+  }
+
+  ::v-deep {
+    .braintree-heading {
+      display: none;
     }
   }
 }
