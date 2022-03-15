@@ -43,7 +43,6 @@ export default {
       nonce: '',
       currency: storeView.i18n.currencyCode,
       locale: storeView.i18n.defaultLocale.replace('-', '_'), // Convert to PayPal format of locale
-      dropinContainers: [],
       isDropinInitialized: false,
       availableMethods: [],
       buttonClickHandlers: [],
@@ -70,13 +69,13 @@ export default {
       return this.$store.getters['braintree/selectedMethod'];
     },
     activeBraintreePaymentMethods () {
-      return this.isDropinInitialized ? this.availableMethods : this.braintreePaymentMethods;
+      return this.isDropinInitialized ? this.availableMethods : this.allBraintreePaymentMethods;
     },
     grandTotal () {
       let cartTotals = this.$store.getters['cart/getTotals']
       return cartTotals.find(seg => seg.code === 'grand_total').value
     },
-    braintreePaymentMethods () {
+    allBraintreePaymentMethods () {
       return {
         card: {
           code: 'card',
@@ -152,10 +151,10 @@ export default {
       try {
         const dropinInstance = await dropin.create({
           authorization: token,
-          container: `#${this.braintreePaymentMethods.card.containerId}`
+          container: `#${this.allBraintreePaymentMethods.card.containerId}`
         });
 
-        this.availableMethods.push(this.braintreePaymentMethods.card);
+        this.availableMethods.push(this.allBraintreePaymentMethods.card);
         return dropinInstance;
       } catch (error) {
         console.log(error);
@@ -167,12 +166,12 @@ export default {
       try {
         const dropinInstance = await dropin.create({
           authorization: token,
-          container: `#${this.braintreePaymentMethods.paypal.containerId}`,
-          paypal: this.braintreePaymentMethods.paypal.dropinOptions,
+          container: `#${this.allBraintreePaymentMethods.paypal.containerId}`,
+          paypal: this.allBraintreePaymentMethods.paypal.dropinOptions,
           card: false
         });
 
-        this.availableMethods.push(this.braintreePaymentMethods.paypal);
+        this.availableMethods.push(this.allBraintreePaymentMethods.paypal);
         return dropinInstance;
       } catch (error) {
         console.log(error);
@@ -183,20 +182,18 @@ export default {
       try {
         const dropinInstance = await dropin.create({
           authorization: token,
-          container: `#${this.braintreePaymentMethods.applePay.containerId}`,
-          applePay: this.braintreePaymentMethods.applePay.dropinOptions,
+          container: `#${this.allBraintreePaymentMethods.applePay.containerId}`,
+          applePay: this.allBraintreePaymentMethods.applePay.dropinOptions,
           card: false
         });
 
-        this.availableMethods.push(this.braintreePaymentMethods.applePay);
+        this.availableMethods.push(this.allBraintreePaymentMethods.applePay);
         return dropinInstance;
       } catch (error) {
         console.log(error);
       }
     },
     onDropinInstanceCreated (dropinInstance) {
-      this.dropinContainers.push(dropinInstance);
-
       const handler = () => {
         if (dropinInstance.isPaymentMethodRequestable()) {
           setTimeout(() => {
