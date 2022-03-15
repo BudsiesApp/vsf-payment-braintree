@@ -8,7 +8,8 @@ import { plugin } from './plugin'
 export const module: Module<BraintreeState, any> = {
   namespaced: true,
   state: {
-    trans: null
+    trans: null,
+    selectedMethod: null
   },
   mutations,
   actions,

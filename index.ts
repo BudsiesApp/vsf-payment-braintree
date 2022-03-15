@@ -1,9 +1,13 @@
 import { StorefrontModule } from '@vue-storefront/core/lib/modules';
-import { module } from './store'
+import { StorageManager } from '@vue-storefront/core/lib/storage-manager'
 import { coreHooks } from '@vue-storefront/core/hooks';
 
+import { module } from './store'
+import { plugin } from './store/plugin';
+import { SN_BRAINTREE } from './store/mutation-types';
+
 export const Braintree: StorefrontModule = function ({ app, store }) {
-  store.registerModule('braintree', module);
+  store.registerModule(SN_BRAINTREE, module);
 
   coreHooks.afterAppInit(() => {
     const CURRENT_METHOD_CODE = 'braintree'
@@ -17,7 +21,12 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
       'offline': false
     })
 
+    store.subscribe(plugin);
+
+    StorageManager.init(SN_BRAINTREE);
+
     if (!app.$isServer) {
+      store.dispatch('braintree/synchronize');
       let isCurrentPaymentMethod = false
       store.watch((state) => state.checkout.paymentDetails, (prevMethodCode, newMethodCode) => {
         isCurrentPaymentMethod = newMethodCode.paymentMethod === CURRENT_METHOD_CODE

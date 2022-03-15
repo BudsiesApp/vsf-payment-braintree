@@ -7,5 +7,8 @@ export const mutations: MutationTree<any> = {
   },
   [types.ADD_USER] (state, payload) {
     state.users.push(payload)
+  },
+  [types.SET_SELECTED_METHOD] (state, payload) {
+    state.selectedMethod = payload;
   }
 }

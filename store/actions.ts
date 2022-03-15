@@ -1,8 +1,10 @@
+import config from 'config'
+import { adjustMultistoreApiUrl } from '@vue-storefront/core/lib/multistore'
+import { StorageManager } from '@vue-storefront/core/lib/storage-manager'
+
 import { BraintreeState } from '../types/BraintreeState'
 import { ActionTree } from 'vuex';
 import * as types from './mutation-types'
-import config from 'config'
-import { adjustMultistoreApiUrl } from '@vue-storefront/core/lib/multistore'
 
 // it's a good practice for all actions to return Promises with effect of their execution
 export const actions: ActionTree<BraintreeState, any> = {
@@ -53,5 +55,13 @@ export const actions: ActionTree<BraintreeState, any> = {
       },
       body: JSON.stringify(params)
     }).then(resp => { return resp.json() })
+  },
+  async synchronize ({ commit }) {
+    const braintreeStorage = StorageManager.get('braintree');
+    const selectedMethod = await braintreeStorage.getItem('selected-method');
+
+    if (selectedMethod) {
+      commit(types.SET_SELECTED_METHOD, selectedMethod);
+    }
   }
 }
