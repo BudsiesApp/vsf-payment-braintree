@@ -126,12 +126,14 @@ export default {
 
       try {
         // Need to initialize applePay instance first to avoid incorrect dropin behavior if ApplePay doesn't exist.
+        const cardInstance = await this.configureCard(token);
         const applePayInstance = await this.configureApplePay(token);
+        const paypalInstance = await this.configurePayPal(token);
 
-        const dropinInstances = await Promise.all([
-          this.configurePayPal(token),
-          this.configureCard(token)
-        ]);
+        const dropinInstances = [
+          cardInstance,
+          paypalInstance
+        ];
 
         if (applePayInstance) {
           dropinInstances.push(applePayInstance);
