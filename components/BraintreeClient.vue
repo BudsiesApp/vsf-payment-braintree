@@ -8,6 +8,7 @@
           :transaction="transactionData"
           :is-selected="isPaymentMethodSelected(method.code)"
           @success="onPaymentSuccess"
+          @error="onPaymentError"
         >
           <template #title>
             <SfRadio
@@ -124,6 +125,13 @@ export default Vue.extend({
     },
     isPaymentMethodSelected (code: string): boolean {
       return this.selectedPaymentMethod === code;
+    },
+    onPaymentError () {
+      this.$store.dispatch('notification/spawnNotification', {
+        type: 'danger',
+        message: this.$t('Something went wrong. Please try another payment method'),
+        action1: { label: this.$t('OK') }
+      })
     }
   }
 })
