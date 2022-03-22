@@ -22,6 +22,10 @@
         </component>
       </div>
     </template>
+
+    <div class="_loader-container" v-else>
+      <div class="loader" />
+    </div>
   </div>
 </template>
 
@@ -136,3 +140,29 @@ export default Vue.extend({
   }
 })
 </script>
+
+<style lang="scss" scoped>
+$loader-size: 1.6rem;
+
+.braintree-client {
+  ._loader-container {
+    position: relative;
+    width: 100%;
+    height: $loader-size;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding-left: 0.74rem;
+
+    .loader {
+      position: absolute;
+      width: $loader-size;
+      height: $loader-size;
+      border-radius: 100%;
+      border: 2px solid var(--c-secondary);
+      border-bottom-color: var(--c-primary);
+      animation: rotate 1s linear infinite;
+    }
+  }
+}
+</style>
