@@ -104,7 +104,7 @@ export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
 <style lang="scss" scoped>
 .checkout-paypal {
   ._button {
-    margin-top: var(--spacer-sm);
+    margin: var(--spacer-sm) var(--spacer-sm) 0;
   }
 }
 </style>

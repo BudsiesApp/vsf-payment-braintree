@@ -121,7 +121,7 @@ export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
 <style lang="scss" scoped>
 .checkout-apple-pay {
   ._apple-pay {
-    margin-top: var(--spacer-sm);
+    margin: var(--spacer-sm) var(--spacer-sm) 0;
   }
 
   @supports not (-webkit-appearance: -apple-pay-button) {
