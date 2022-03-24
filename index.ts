@@ -29,8 +29,9 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
     if (!app.$isServer) {
       store.dispatch('braintree/synchronize');
       let isCurrentPaymentMethod = false
-      store.watch((state) => state.checkout.paymentDetails, (prevMethodCode, newMethodCode) => {
-        isCurrentPaymentMethod = newMethodCode.paymentMethod === CURRENT_METHOD_CODE
+
+      EventBus.$on('checkout-payment-method-changed', (paymentMethodCode: string) => {
+        isCurrentPaymentMethod = paymentMethodCode === CURRENT_METHOD_CODE;
       })
 
       const invokePlaceOrder = () => {
