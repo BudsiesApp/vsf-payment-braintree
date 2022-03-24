@@ -1,3 +1,4 @@
+import braintree from 'braintree-web';
 import config from 'config'
 import { adjustMultistoreApiUrl } from '@vue-storefront/core/lib/multistore'
 import { StorageManager } from '@vue-storefront/core/lib/storage-manager'
@@ -63,5 +64,13 @@ export const actions: ActionTree<BraintreeState, any> = {
     if (selectedMethod) {
       commit(types.SET_SELECTED_METHOD, selectedMethod);
     }
+  },
+  async createBraintreeClient ({ commit, dispatch }) {
+    const token = await dispatch('generateToken');
+    const braintreeClient = await braintree.client.create({
+      authorization: token
+    });
+
+    commit(types.SET_BRAINTREE_CLIENT, braintreeClient);
   }
 }

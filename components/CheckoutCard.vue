@@ -1,6 +1,6 @@
 <template>
   <div class="checkout-card">
-    <slot name="title" v-bind="{isSelected}" />
+    <slot name="title" />
 
     <div class="_content" v-show="isSelected">
       <div class="_row">
@@ -40,17 +40,12 @@
 
 <script lang="ts">
 import braintree, { BraintreeError, HostedFields, HostedFieldsEvent } from 'braintree-web';
-import Vue, { PropType, VueConstructor } from 'vue'
 import { TranslateResult } from 'vue-i18n';
 
-import { InjectType } from 'src/modules/shared';
-
-import TransactionData from '../types/transaction-data';
 import { Dictionary } from 'src/modules/budsies';
 
-interface InjectedServices {
-  window: Window
-}
+import { SET_PAYMENT_DATA } from '../store/mutation-types';
+import PaymentMethod from '../mixins/PaymentMethod';
 
 const enum Fields {
   NUMBER = 'number',
@@ -58,25 +53,8 @@ const enum Fields {
   CVV = 'cvv'
 }
 
-export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
+export default PaymentMethod.extend({
   name: 'CheckoutCard',
-  inject: {
-    window: { from: 'WindowObject' }
-  } as unknown as InjectType<InjectedServices>,
-  props: {
-    braintreeClient: {
-      type: Object as PropType<braintree.Client>,
-      required: true
-    },
-    transaction: {
-      type: Object as PropType<TransactionData>,
-      required: true
-    },
-    isSelected: {
-      type: Boolean,
-      default: false
-    }
-  },
   data () {
     const fieldsValidationState: Dictionary<boolean> = {
       'number': true,
@@ -86,7 +64,6 @@ export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
 
     return {
       hostedFieldsInstance: undefined as undefined | HostedFields,
-      fSubmitHandler: undefined as undefined | ((event: MouseEvent) => Promise<void>),
       fieldsValidationState,
       errorMessage: '' as TranslateResult,
       fOnHostedFieldsBlur: undefined as ((event: HostedFieldsEvent) => void) | undefined,
@@ -102,6 +79,9 @@ export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
     },
     showNumberError (): boolean {
       return !this.fieldsValidationState[Fields.NUMBER];
+    },
+    isSelected (): boolean {
+      return this.selectedBraintreeMethod === 'card';
     }
   },
   async created (): Promise<void> {
@@ -136,21 +116,12 @@ export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
       });
 
       this.addHostedFieldsEventListeners();
-
-      this.hostedFieldsCreated();
     } catch (error) {
       this.$emit('error', error);
     }
   },
   beforeDestroy (): void {
-    const placeOrderButton = this.getPlaceOrderButton();
     this.removeHostedFieldsEventListeners();
-
-    if (!placeOrderButton || !this.fSubmitHandler) {
-      return;
-    }
-
-    placeOrderButton.removeEventListener('click', this.fSubmitHandler);
   },
   methods: {
     addHostedFieldsEventListeners (): void {
@@ -190,21 +161,7 @@ export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
         this.errorMessage = '';
       }
     },
-    getPlaceOrderButton (): HTMLElement | null {
-      return document.querySelector('.place-order-btn');
-    },
-    hostedFieldsCreated (): void {
-      const submitButton = this.getPlaceOrderButton();
-      if (!submitButton) {
-        return;
-      }
-
-      this.fSubmitHandler = this.submitHandler.bind(this);
-
-      submitButton.addEventListener('click', this.fSubmitHandler);
-    },
-    async submitHandler (event: MouseEvent): Promise<void> {
-      event.preventDefault();
+    async doPayment (): Promise<void> {
       this.errorMessage = '';
 
       if (!this.hostedFieldsInstance || !this.isSelected) {
@@ -213,7 +170,13 @@ export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
 
       try {
         const payload = await this.hostedFieldsInstance.tokenize();
-        this.$emit('success', payload);
+
+        this.$store.commit(`braintree/${SET_PAYMENT_DATA}`, {
+          payment_method_nonce: payload.nonce,
+          budsies_payment_method_code: this.getPaymentMethodCode(payload.type)
+        });
+
+        this.$emit('success');
       } catch (error) {
         const braintreeError = error as BraintreeError;
 

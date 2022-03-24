@@ -1,51 +1,30 @@
 <template>
   <div class="checkout-apple-pay" v-if="!!applePayCheckoutInstance">
-    <slot name="title" v-bind="{isSelected}" />
-
-    <div class="_apple-pay" v-if="showPaymentMethodContent" @click="onApplePayButtonClick" />
+    <slot name="title" />
   </div>
 </template>
 
 <script lang="ts">
 import config from 'config'
 import braintree, { ApplePay } from 'braintree-web';
-import Vue, { PropType, VueConstructor } from 'vue';
 
 import { InjectType } from 'src/modules/shared';
 
-import TransactionData from '../types/transaction-data';
+import { SET_PAYMENT_DATA } from '../store/mutation-types';
+import PaymentMethod from '../mixins/PaymentMethod';
 
 interface InjectedServices {
   window: Window
 }
 
-export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
+export default PaymentMethod.extend({
   name: 'CheckoutApplePay',
   inject: {
     window: { from: 'WindowObject' }
   } as unknown as InjectType<InjectedServices>,
-  props: {
-    braintreeClient: {
-      type: Object as PropType<braintree.Client>,
-      required: true
-    },
-    transaction: {
-      type: Object as PropType<TransactionData>,
-      required: true
-    },
-    isSelected: {
-      type: Boolean,
-      default: false
-    }
-  },
   data () {
     return {
       applePayCheckoutInstance: undefined as undefined | ApplePay
-    }
-  },
-  computed: {
-    showPaymentMethodContent (): boolean {
-      return this.isSelected && !!this.applePayCheckoutInstance;
     }
   },
   async created (): Promise<void> {
@@ -62,7 +41,7 @@ export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
     }
   },
   methods: {
-    onApplePayButtonClick () {
+    doPayment () {
       if (!this.applePayCheckoutInstance) {
         throw new Error('ApplePay instance is undefined');
       }
@@ -70,7 +49,7 @@ export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
       const paymentRequest = this.applePayCheckoutInstance.createPaymentRequest({
         total: {
           label: config.braintree.applePay.label,
-          amount: this.transaction.total.toString(10)
+          amount: this.total.toString(10)
         },
 
         requiredBillingContactFields: ['postalAddress']
@@ -106,6 +85,11 @@ export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
       try {
         const payload = await this.applePayCheckoutInstance.tokenize({
           token: event.payment.token
+        });
+
+        this.$store.commit(`braintree/${SET_PAYMENT_DATA}`, {
+          payment_method_nonce: payload.nonce,
+          budsies_payment_method_code: this.getPaymentMethodCode(payload.type)
         });
 
         this.$emit('success', payload);

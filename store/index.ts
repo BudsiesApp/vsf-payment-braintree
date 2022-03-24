@@ -9,7 +9,9 @@ export const module: Module<BraintreeState, any> = {
   namespaced: true,
   state: {
     trans: null,
-    selectedMethod: null
+    selectedMethod: null,
+    braintreeClient: null,
+    paymentData: {}
   },
   mutations,
   actions,

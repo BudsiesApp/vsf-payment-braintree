@@ -1,6 +1,7 @@
 import { StorefrontModule } from '@vue-storefront/core/lib/modules';
 import { StorageManager } from '@vue-storefront/core/lib/storage-manager'
 import { coreHooks } from '@vue-storefront/core/hooks';
+import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 
 import { module } from './store'
 import { plugin } from './store/plugin';
@@ -34,10 +35,12 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
 
       const invokePlaceOrder = () => {
         if (isCurrentPaymentMethod) {
-          app.$emit('checkout-do-placeOrder', {})
+          const paymentData = store.getters['braintree/paymentData'];
+          EventBus.$emit('checkout-do-placeOrder', paymentData)
         }
       }
-      app.$on('checkout-before-placeOrder', invokePlaceOrder)
+
+      EventBus.$on('checkout-before-placeOrder', invokePlaceOrder)
     }
   })
 }

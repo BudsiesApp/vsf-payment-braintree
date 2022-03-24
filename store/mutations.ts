@@ -10,5 +10,11 @@ export const mutations: MutationTree<any> = {
   },
   [types.SET_SELECTED_METHOD] (state, payload) {
     state.selectedMethod = payload;
+  },
+  [types.SET_BRAINTREE_CLIENT] (state, payload) {
+    state.braintreeClient = payload;
+  },
+  [types.SET_PAYMENT_DATA] (state, payload) {
+    state.paymentData = payload;
   }
 }

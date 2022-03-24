@@ -1,23 +1,15 @@
 <template>
   <div class="checkout-paypal">
     <slot name="title" />
-
-    <div id="paypal-button" class="_button" v-show="isSelected" />
   </div>
 </template>
 
 <script lang="ts">
 import braintree, { PayPalCheckout } from 'braintree-web';
 import { PayPalCheckoutTokenizationOptions } from 'braintree-web/modules/paypal-checkout';
-import Vue, { PropType, VueConstructor } from 'vue';
 
-import { InjectType } from 'src/modules/shared';
-
-import TransactionData from '../types/transaction-data';
-
-interface InjectedServices {
-  window: Window
-}
+import { SET_PAYMENT_DATA } from '../store/mutation-types';
+import PaymentMethod from '../mixins/PaymentMethod';
 
 enum FlowType {
   Vault = 'vault',
@@ -30,23 +22,12 @@ enum Intent {
   Capture = 'capture'
 }
 
-export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
+export default PaymentMethod.extend({
   name: 'CheckoutPayPal',
-  inject: {
-    window: { from: 'WindowObject' }
-  } as unknown as InjectType<InjectedServices>,
   props: {
-    braintreeClient: {
-      type: Object as PropType<braintree.Client>,
+    paypalButtonContainerId: {
+      type: String,
       required: true
-    },
-    transaction: {
-      type: Object as PropType<TransactionData>,
-      required: true
-    },
-    isSelected: {
-      type: Boolean,
-      default: false
     }
   },
   async created (): Promise<void> {
@@ -56,7 +37,7 @@ export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
       });
 
       await paypalCheckoutInstance.loadPayPalSDK({
-        currency: this.transaction.currency,
+        currency: this.currency,
         intent: 'capture'
       });
 
@@ -66,19 +47,23 @@ export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
     }
   },
   methods: {
-    onPayPalSdkLoaded (paypalCheckoutInstance: PayPalCheckout): void {
+    async onPayPalSdkLoaded (paypalCheckoutInstance: PayPalCheckout): Promise<void> {
       const paypal = (this.window as any).paypal;
       if (!paypal) {
         return;
       }
 
-      paypal.Buttons({
+      const buttons = await paypal.Buttons({
         fundingSource: paypal.FUNDING.PAYPAL,
+        style: {
+          label: 'pay',
+          color: 'blue'
+        },
         createOrder: () => {
           return paypalCheckoutInstance.createPayment({
             flow: FlowType.Checkout,
-            amount: this.transaction.total,
-            currency: this.transaction.currency,
+            amount: this.total,
+            currency: this.currency,
             intent: Intent.Capture
           });
         },
@@ -89,13 +74,20 @@ export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
               return;
             }
 
+            this.$store.commit(`braintree/${SET_PAYMENT_DATA}`, {
+              payment_method_nonce: payload.nonce,
+              budsies_payment_method_code: this.getPaymentMethodCode(payload.type)
+            });
+
             this.$emit('success', payload);
           })
         },
         onError: (error: string) => {
           this.$emit('error', error)
         }
-      }).render('#paypal-button');
+      });
+
+      buttons.render(`#${this.paypalButtonContainerId}`);
     }
   }
 })
