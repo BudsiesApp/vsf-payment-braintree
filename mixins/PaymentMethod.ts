@@ -1,6 +1,6 @@
 import { currentStoreView } from '@vue-storefront/core/lib/multistore';
 import PaymentDetails from '@vue-storefront/core/modules/checkout/types/PaymentDetails';
-import Vue, { VueConstructor } from 'vue';
+import Vue, { PropType, VueConstructor } from 'vue';
 
 import { InjectType } from 'src/modules/shared';
 
@@ -9,13 +9,16 @@ interface InjectedServices {
 }
 
 export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
+  props: {
+    braintreeClient: {
+      type: Object as PropType<braintree.Client>,
+      required: true
+    }
+  },
   inject: {
     window: { from: 'WindowObject' }
   } as unknown as InjectType<InjectedServices>,
   computed: {
-    braintreeClient (): braintree.Client {
-      return this.$store.getters['braintree/braintreeClient'];
-    },
     selectedBraintreeMethod (): string | undefined {
       if (this.paymentDetails.paymentMethod !== 'braintree') {
         return;

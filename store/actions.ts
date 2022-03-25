@@ -65,12 +65,12 @@ export const actions: ActionTree<BraintreeState, any> = {
       commit(types.SET_SELECTED_METHOD, selectedMethod);
     }
   },
-  async createBraintreeClient ({ commit, dispatch }) {
+  async createBraintreeClient ({ dispatch }): Promise<braintree.Client> {
     const token = await dispatch('generateToken');
     const braintreeClient = await braintree.client.create({
       authorization: token
     });
 
-    commit(types.SET_BRAINTREE_CLIENT, braintreeClient);
+    return braintreeClient;
   }
 }

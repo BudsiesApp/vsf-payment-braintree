@@ -10,7 +10,6 @@ export const module: Module<BraintreeState, any> = {
   state: {
     trans: null,
     selectedMethod: null,
-    braintreeClient: null,
     paymentData: {}
   },
   mutations,
