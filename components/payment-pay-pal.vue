@@ -5,7 +5,7 @@
     <div
       class="_pay-pal-button-container"
       id="pay-pal-button-container"
-      v-show="isSelected"
+      v-show="showContent"
     />
   </div>
 </template>
@@ -28,15 +28,10 @@ enum Intent {
   Capture = 'capture'
 }
 
-const methodName = 'paypal';
+const PAYMENT_METHOD_CODE = 'gene_braintree_paypal';
 
 export default PaymentMethod.extend({
   name: 'PaymentPayPal',
-  computed: {
-    isSelected (): boolean {
-      return this.selectedBraintreeMethod === methodName;
-    }
-  },
   async created (): Promise<void> {
     try {
       const paypalCheckoutInstance = await braintree.paypalCheckout.create({
@@ -83,7 +78,7 @@ export default PaymentMethod.extend({
 
             this.$store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_DATA}`, {
               payment_method_nonce: payload.nonce,
-              budsies_payment_method_code: this.getPaymentMethodCode(payload.type)
+              budsies_payment_method_code: PAYMENT_METHOD_CODE
             });
 
             this.$emit('success');

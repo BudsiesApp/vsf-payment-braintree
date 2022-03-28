@@ -2,7 +2,7 @@
   <div class="checkout-card">
     <slot name="title" />
 
-    <div class="_content" v-show="isSelected">
+    <div class="_content" v-show="showContent">
       <div class="_row">
         <div class="_field" :class="{ '-error': showNumberError }">
           <label for="card-number" class="_label">
@@ -43,6 +43,7 @@ import { Dictionary } from 'src/modules/budsies';
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_DATA, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
 
+const PAYMENT_METHOD_CODE = 'gene_braintree_creditcard';
 const enum Fields {
   NUMBER = 'number',
   EXPIRATION_DATE = 'expirationDate',
@@ -75,9 +76,6 @@ export default PaymentMethod.extend({
     },
     showNumberError (): boolean {
       return !this.fieldsValidationState[Fields.NUMBER];
-    },
-    isSelected (): boolean {
-      return this.selectedBraintreeMethod === 'card';
     }
   },
   async created (): Promise<void> {
@@ -160,8 +158,8 @@ export default PaymentMethod.extend({
     async doPayment (): Promise<void> {
       this.errorMessage = '';
 
-      if (!this.hostedFieldsInstance || !this.isSelected) {
-        return;
+      if (!this.hostedFieldsInstance) {
+        throw new Error('Hosted fields instance is undefined');
       }
 
       try {
@@ -169,7 +167,7 @@ export default PaymentMethod.extend({
 
         this.$store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_DATA}`, {
           payment_method_nonce: payload.nonce,
-          budsies_payment_method_code: this.getPaymentMethodCode(payload.type)
+          budsies_payment_method_code: PAYMENT_METHOD_CODE
         });
 
         this.$emit('success');

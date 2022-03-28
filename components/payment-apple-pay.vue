@@ -11,6 +11,7 @@ import braintree, { ApplePay } from 'braintree-web';
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_DATA, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
 
+const PAYMENT_METHOD_CODE = 'gene_braintree_applepay';
 let ApplePaySession: any;
 
 export default PaymentMethod.extend({
@@ -84,7 +85,7 @@ export default PaymentMethod.extend({
 
         this.$store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_DATA}`, {
           payment_method_nonce: payload.nonce,
-          budsies_payment_method_code: this.getPaymentMethodCode(payload.type)
+          budsies_payment_method_code: PAYMENT_METHOD_CODE
         });
 
         this.$emit('success');
