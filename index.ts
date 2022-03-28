@@ -1,9 +1,14 @@
 import { StorefrontModule } from '@vue-storefront/core/lib/modules';
-import { module } from './store'
+import { StorageManager } from '@vue-storefront/core/lib/storage-manager'
 import { coreHooks } from '@vue-storefront/core/hooks';
+import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
+
+import { module } from './store'
+import { plugin } from './store/plugin';
+import { SET_PAYMENT_DATA, SN_BRAINTREE } from './store/mutation-types';
 
 export const Braintree: StorefrontModule = function ({ app, store }) {
-  store.registerModule('braintree', module);
+  store.registerModule(SN_BRAINTREE, module);
 
   coreHooks.afterAppInit(() => {
     const CURRENT_METHOD_CODE = 'braintree'
@@ -17,18 +22,27 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
       'offline': false
     })
 
+    store.subscribe(plugin);
+
+    StorageManager.init(SN_BRAINTREE);
+
     if (!app.$isServer) {
+      store.dispatch('braintree/synchronize');
       let isCurrentPaymentMethod = false
-      store.watch((state) => state.checkout.paymentDetails, (prevMethodCode, newMethodCode) => {
-        isCurrentPaymentMethod = newMethodCode.paymentMethod === CURRENT_METHOD_CODE
+
+      EventBus.$on('checkout-payment-method-changed', (paymentMethodCode: string) => {
+        isCurrentPaymentMethod = paymentMethodCode === CURRENT_METHOD_CODE;
       })
 
       const invokePlaceOrder = () => {
         if (isCurrentPaymentMethod) {
-          app.$emit('checkout-do-placeOrder', {})
+          const paymentData = store.getters['braintree/paymentData'];
+          EventBus.$emit('checkout-do-placeOrder', { ...paymentData })
+          store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_DATA}`, {});
         }
       }
-      app.$on('checkout-before-placeOrder', invokePlaceOrder)
+
+      EventBus.$on('checkout-before-placeOrder', invokePlaceOrder)
     }
   })
 }
