@@ -5,7 +5,7 @@ import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 
 import { module } from './store'
 import { plugin } from './store/plugin';
-import { SN_BRAINTREE } from './store/mutation-types';
+import { SET_PAYMENT_DATA, SN_BRAINTREE } from './store/mutation-types';
 
 export const Braintree: StorefrontModule = function ({ app, store }) {
   store.registerModule(SN_BRAINTREE, module);
@@ -37,7 +37,8 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
       const invokePlaceOrder = () => {
         if (isCurrentPaymentMethod) {
           const paymentData = store.getters['braintree/paymentData'];
-          EventBus.$emit('checkout-do-placeOrder', paymentData)
+          EventBus.$emit('checkout-do-placeOrder', { ...paymentData })
+          store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_DATA}`, {});
         }
       }
 
