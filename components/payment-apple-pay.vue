@@ -11,6 +11,8 @@ import braintree, { ApplePay } from 'braintree-web';
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_DATA, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
 
+let ApplePaySession: any;
+
 export default PaymentMethod.extend({
   name: 'PaymentApplePay',
   data () {
@@ -19,8 +21,10 @@ export default PaymentMethod.extend({
     }
   },
   async created (): Promise<void> {
-    if (!(this.window as any).ApplePaySession ||
-     !(this.window as any).ApplePaySession.canMakePayments()
+    ApplePaySession = (this.window as any).ApplePaySession;
+
+    if (!ApplePaySession ||
+     !ApplePaySession.canMakePayments()
     ) {
       return;
     }
@@ -46,7 +50,7 @@ export default PaymentMethod.extend({
         requiredBillingContactFields: ['postalAddress']
       });
 
-      const session = new (this.window as any).ApplePaySession(3, paymentRequest);
+      const session = new ApplePaySession(3, paymentRequest);
 
       session.onvalidatemerchant = (event: any) => this.onValidateMerchant(event, session);
       session.onpaymentauthorized = (event: any) => this.onPaymentAuthorized(event, session);
@@ -84,9 +88,9 @@ export default PaymentMethod.extend({
         });
 
         this.$emit('success');
-        session.completePayment((this.window as any).ApplePaySession.STATUS_SUCCESS);
+        session.completePayment(ApplePaySession.STATUS_SUCCESS);
       } catch (error) {
-        session.completePayment((this.window as any).ApplePaySession.STATUS_FAILURE);
+        session.completePayment(ApplePaySession.STATUS_FAILURE);
       }
     }
   }
