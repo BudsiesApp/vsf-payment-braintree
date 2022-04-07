@@ -265,16 +265,19 @@ export default PaymentMethod.extend({
     border-bottom: 1px solid var(--c-light);
     width: 100%;
     position: relative;
-    padding: var(--input-padding, var(--spacer-sm) 0 var(--spacer-xs) 0);
+    padding: var(--spacer-sm) 0 var(--spacer-xs) 0;
   }
 
   ._label {
     position: absolute;
-    top: var(--input-label-top, 50%);
-    color: var(--input-label-color, inherit);
-    font: var(--input-label-font, var(--input-label-font-weight, var(--font-normal)) var(--input-label-font-size, var(--font-lg))/var(--input-label-font-line-height, 1) var(--input-label-font-family, var(--font-family-secondary)));
-    transform: var(--input-label-transform, translate3d(0, calc(var(--input-label-top, 50%) * -1), 0));
-    transition: var(--input-label-transition, top 150ms linear, font-size 150ms linear);
+    top: var(--label-top, 50%);
+    color: var(--label-color, inherit);
+    font-weight: var(--font-normal);
+    font-family: var(--font-family-secondary);
+    line-height: 1;
+    font-size: var(--label-font-size, var(--font-lg));
+    transform: translate3d(0, calc(var(--input-label-top, 50%) * -1), 0);
+    transition: top 150ms linear, font-size 150ms linear;
 
     &::after {
       color: var(--c-primary);
@@ -293,8 +296,8 @@ export default PaymentMethod.extend({
 
     &.-filled {
       ._label {
-        --input-label-top: 0;
-        --input-label-font-size: var(--font-2xs);
+        --label-top: 0;
+        --label-font-size: var(--font-2xs);
       }
     }
 
@@ -327,9 +330,9 @@ export default PaymentMethod.extend({
     border-bottom: 1px solid var(--c-primary);
 
     ~ ._label {
-      --input-label-top: 0;
-      --input-label-color: var(--c-primary);
-      --input-label-font-size: var(--font-2xs);
+      --label-top: 0;
+      --label-color: var(--c-primary);
+      --label-font-size: var(--font-2xs);
     }
   }
 }
