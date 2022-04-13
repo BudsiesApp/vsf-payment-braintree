@@ -1,4 +1,3 @@
-import config from 'config';
 import { StorefrontModule } from '@vue-storefront/core/lib/modules';
 import { coreHooks } from '@vue-storefront/core/hooks';
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
