@@ -41,8 +41,7 @@ import { TranslateResult } from 'vue-i18n';
 
 import { Dictionary } from 'src/modules/budsies';
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
-import { SET_PAYMENT_DATA, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
-import supportedMethodsCodes from '../types/SupportedMethodsCodes';
+import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
 
 const enum Fields {
   NUMBER = 'number',
@@ -176,10 +175,7 @@ export default PaymentMethod.extend({
       try {
         const payload = await this.hostedFieldsInstance.tokenize();
 
-        this.$store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_DATA}`, {
-          payment_method_nonce: payload.nonce,
-          budsies_payment_method_code: supportedMethodsCodes.CARD
-        });
+        this.$store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_METHOD_NONCE}`, payload.nonce);
 
         this.$emit('success');
       } catch (error) {

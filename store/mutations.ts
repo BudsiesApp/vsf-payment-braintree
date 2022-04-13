@@ -1,3 +1,4 @@
+import Vue from 'vue'
 import { MutationTree } from 'vuex'
 import * as types from './mutation-types'
 
@@ -8,7 +9,7 @@ export const mutations: MutationTree<any> = {
   [types.ADD_USER] (state, payload) {
     state.users.push(payload)
   },
-  [types.SET_PAYMENT_DATA] (state, payload) {
-    state.paymentData = payload;
+  [types.SET_PAYMENT_METHOD_NONCE] (state, payload) {
+    Vue.set(state, 'paymentMethodNonce', payload);
   }
 }

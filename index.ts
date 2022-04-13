@@ -3,7 +3,7 @@ import { coreHooks } from '@vue-storefront/core/hooks';
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 
 import { module } from './store'
-import { SET_PAYMENT_DATA, SN_BRAINTREE } from './store/mutation-types';
+import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from './store/mutation-types';
 import getComponentByMethodCode from './helpers/get-component-by-method-code.function';
 import supportedMethodsCodes from './types/SupportedMethodsCodes';
 
@@ -25,9 +25,9 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
 
       const invokePlaceOrder = () => {
         if (isCurrentPaymentMethod) {
-          const paymentData = store.getters['braintree/paymentData'];
-          EventBus.$emit('checkout-do-placeOrder', { ...paymentData })
-          store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_DATA}`, {});
+          const paymentMethodNonce = store.getters['braintree/paymentMethodNonce'];
+          EventBus.$emit('checkout-do-placeOrder', { payment_method_nonce: paymentMethodNonce })
+          store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_METHOD_NONCE}`, undefined);
         }
       }
 

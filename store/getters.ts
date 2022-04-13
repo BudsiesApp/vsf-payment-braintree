@@ -2,5 +2,5 @@ import { BraintreeState } from '../types/BraintreeState'
 import { GetterTree } from 'vuex';
 
 export const getters: GetterTree<BraintreeState, any> = {
-  paymentData: (state) => state.paymentData
+  paymentMethodNonce: (state) => state.paymentMethodNonce
 }
