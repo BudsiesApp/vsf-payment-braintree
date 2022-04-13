@@ -1,6 +1,6 @@
 <template>
   <div class="payment-pay-pal">
-    <slot name="title" />
+    <slot />
 
     <div
       class="_pay-pal-button-container"
@@ -16,6 +16,7 @@ import { PayPalCheckoutTokenizationOptions } from 'braintree-web/modules/paypal-
 
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_DATA, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
+import supportedMethodsCodes from '../types/SupportedMethodsCodes';
 
 enum FlowType {
   Vault = 'vault',
@@ -28,27 +29,41 @@ enum Intent {
   Capture = 'capture'
 }
 
-const PAYMENT_METHOD_CODE = 'gene_braintree_paypal';
-
 export default PaymentMethod.extend({
   name: 'PaymentPayPal',
-  async created (): Promise<void> {
-    try {
-      const paypalCheckoutInstance = await braintree.paypalCheckout.create({
-        client: this.braintreeClient
-      });
-
-      await paypalCheckoutInstance.loadPayPalSDK({
-        currency: this.currency,
-        intent: 'capture'
-      });
-
-      await this.onPayPalSdkLoaded(paypalCheckoutInstance);
-    } catch (error) {
-      this.$emit('error', error);
+  data () {
+    return {
+      paypalCheckoutInstance: undefined as braintree.PayPalCheckout | undefined
     }
   },
+  created (): void {
+    if (!this.braintreeClient) {
+      return;
+    }
+
+    this.createPaypalCheckoutInstance(this.braintreeClient);
+  },
   methods: {
+    async createPaypalCheckoutInstance (braintreeClient: braintree.Client): Promise<void> {
+      if (this.paypalCheckoutInstance) {
+        return;
+      }
+
+      try {
+        this.paypalCheckoutInstance = await braintree.paypalCheckout.create({
+          client: braintreeClient
+        });
+
+        await this.paypalCheckoutInstance.loadPayPalSDK({
+          currency: this.currency,
+          intent: 'capture'
+        });
+
+        await this.onPayPalSdkLoaded(this.paypalCheckoutInstance);
+      } catch (error) {
+        this.$emit('error', error);
+      }
+    },
     async onPayPalSdkLoaded (paypalCheckoutInstance: PayPalCheckout): Promise<void> {
       const paypal = (this.window as any).paypal;
       if (!paypal) {
@@ -78,7 +93,7 @@ export default PaymentMethod.extend({
 
             this.$store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_DATA}`, {
               payment_method_nonce: payload.nonce,
-              budsies_payment_method_code: PAYMENT_METHOD_CODE
+              budsies_payment_method_code: supportedMethodsCodes.PAY_PAL
             });
 
             this.$emit('success');
@@ -91,6 +106,17 @@ export default PaymentMethod.extend({
 
       buttons.render('#pay-pal-button-container');
     }
+  },
+  watch: {
+    braintreeClient: {
+      handler (val) {
+        if (!val) {
+          return;
+        }
+
+        this.createPaypalCheckoutInstance(val);
+      }
+    }
   }
 })
 </script>
@@ -101,7 +127,7 @@ export default PaymentMethod.extend({
 .payment-pay-pal {
   ._pay-pal-button-container {
       display: flex;
-      margin-top: var(--spacer-sm);
+      margin: var(--spacer-sm) 0;
       justify-content: center;
       align-items: center;
       padding: 0 var(--spacer-sm);

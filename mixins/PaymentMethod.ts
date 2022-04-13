@@ -11,8 +11,8 @@ interface InjectedServices {
 export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
   props: {
     braintreeClient: {
-      type: Object as PropType<braintree.Client>,
-      required: true
+      type: Object as PropType<braintree.Client | undefined>,
+      default: undefined
     },
     showContent: {
       type: Boolean,

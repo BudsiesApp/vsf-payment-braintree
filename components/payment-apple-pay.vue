@@ -1,6 +1,6 @@
 <template>
   <div class="checkout-apple-pay" v-if="!!applePayCheckoutInstance">
-    <slot name="title" />
+    <slot />
   </div>
 </template>
 
@@ -10,8 +10,8 @@ import braintree, { ApplePay } from 'braintree-web';
 
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_DATA, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
+import supportedMethodsCodes from '../types/SupportedMethodsCodes';
 
-const PAYMENT_METHOD_CODE = 'gene_braintree_applepay';
 let ApplePaySession: any;
 
 export default PaymentMethod.extend({
@@ -22,21 +22,24 @@ export default PaymentMethod.extend({
     }
   },
   async created (): Promise<void> {
-    ApplePaySession = (this.window as any).ApplePaySession;
-
-    if (!ApplePaySession ||
-     !ApplePaySession.canMakePayments()
-    ) {
+    if (!this.isApplePayAvailable() || !this.braintreeClient) {
       return;
     }
 
-    try {
-      this.applePayCheckoutInstance = await braintree.applePay.create({ client: this.braintreeClient });
-    } catch (error) {
-      this.$emit('error', error);
-    }
+    this.createApplePayCheckoutInstance(this.braintreeClient);
   },
   methods: {
+    async createApplePayCheckoutInstance (braintreeClient: braintree.Client): Promise<void> {
+      if (this.applePayCheckoutInstance) {
+        return;
+      }
+
+      try {
+        this.applePayCheckoutInstance = await braintree.applePay.create({ client: braintreeClient });
+      } catch (error) {
+        this.$emit('error', error);
+      }
+    },
     doPayment () {
       if (!this.applePayCheckoutInstance) {
         throw new Error('ApplePay instance is undefined');
@@ -56,6 +59,17 @@ export default PaymentMethod.extend({
       session.onvalidatemerchant = (event: any) => this.onValidateMerchant(event, session);
       session.onpaymentauthorized = (event: any) => this.onPaymentAuthorized(event, session);
       session.begin();
+    },
+    isApplePayAvailable (): boolean {
+      ApplePaySession = (this.window as any).ApplePaySession;
+
+      if (!ApplePaySession ||
+     !ApplePaySession.canMakePayments()
+      ) {
+        return false;
+      }
+
+      return true;
     },
     async onValidateMerchant (event: any, session: any): Promise<void> {
       if (!this.applePayCheckoutInstance) {
@@ -85,13 +99,24 @@ export default PaymentMethod.extend({
 
         this.$store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_DATA}`, {
           payment_method_nonce: payload.nonce,
-          budsies_payment_method_code: PAYMENT_METHOD_CODE
+          budsies_payment_method_code: supportedMethodsCodes.APPLE_PAY
         });
 
         this.$emit('success');
         session.completePayment(ApplePaySession.STATUS_SUCCESS);
       } catch (error) {
         session.completePayment(ApplePaySession.STATUS_FAILURE);
+      }
+    }
+  },
+  watch: {
+    braintreeClient: {
+      handler (val) {
+        if (!val || !this.isApplePayAvailable()) {
+          return;
+        }
+
+        this.createApplePayCheckoutInstance(val);
       }
     }
   }

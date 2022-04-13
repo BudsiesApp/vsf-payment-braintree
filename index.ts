@@ -5,6 +5,8 @@ import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 
 import { module } from './store'
 import { SET_PAYMENT_DATA, SN_BRAINTREE } from './store/mutation-types';
+import getComponentByMethodCode from './helpers/get-component-by-method-code.function';
+import supportedMethodsCodes from './types/SupportedMethodsCodes';
 
 export const Braintree: StorefrontModule = function ({ app, store }) {
   store.registerModule(SN_BRAINTREE, module);
@@ -14,11 +16,12 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
       let isCurrentPaymentMethod = false
 
       EventBus.$on('checkout-payment-method-changed', (paymentMethodCode: string) => {
-        isCurrentPaymentMethod = config.braintree.methodCodes.includes(paymentMethodCode);
+        isCurrentPaymentMethod = Object.values(supportedMethodsCodes)
+          .includes(paymentMethodCode);
       });
 
       EventBus.$on('collect-methods-handled-by-other-modules', (methods: string[]) => {
-        methods.push(...config.braintree.methodCodes);
+        methods.push(...Object.values(supportedMethodsCodes));
       });
 
       const invokePlaceOrder = () => {
@@ -33,3 +36,5 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
     }
   })
 }
+
+export { getComponentByMethodCode, supportedMethodsCodes };
