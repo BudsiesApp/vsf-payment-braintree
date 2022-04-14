@@ -11,7 +11,7 @@
           <div id="card-number" class="_input" />
 
           <label for="card-number" class="_label">
-            {{ $t('Card Number') }}
+            {{ $t('Card number') }}
           </label>
         </div>
       </div>
@@ -35,7 +35,7 @@
           <div id="expiration-date" class="_input" />
 
           <label for="expiration-date" class="_label">
-            {{ $t('Expiration Date') }}
+            {{ $t('Expiration date') }}
           </label>
         </div>
       </div>
@@ -216,7 +216,7 @@ export default PaymentMethod.extend({
             [Fields.EXPIRATION_DATE, Fields.NUMBER, Fields.CVV].forEach((key) => {
               this.fieldsValidationState[key].isValid = false;
             })
-            this.errorMessage = this.$t('Missed required fields');
+            this.errorMessage = this.$t('Please, fill required fields');
             break;
           case 'HOSTED_FIELDS_FIELDS_INVALID':
             this.errorMessage = this.$t('Some fields are invalid');
