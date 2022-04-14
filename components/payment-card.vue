@@ -245,10 +245,15 @@ export default PaymentMethod.extend({
 </script>
 
 <style lang="scss" scoped>
+@import "~@storefront-ui/shared/styles/helpers/breakpoints";
+
 .checkout-card {
+  --input-label-font-size: var(--font-size-base);
+
   ._content {
-    margin: var(--spacer-sm) 0 var(--spacer-sm);
-    padding: 0 var(--spacer-sm);
+    background-color: var(--c-white-darken);
+    margin-top: var(--spacer-sm);
+    padding: var(--spacer-sm);
   }
 
   ._row {
@@ -275,7 +280,7 @@ export default PaymentMethod.extend({
     font-weight: var(--font-normal);
     font-family: var(--font-family-secondary);
     line-height: 1;
-    font-size: var(--label-font-size, var(--font-lg));
+    font-size: var(--input-label-font-size, var(--font-lg));
     transform: translate3d(0, calc(var(--input-label-top, 50%) * -1), 0);
     transition: top 150ms linear, font-size 150ms linear;
 
@@ -297,7 +302,7 @@ export default PaymentMethod.extend({
     &.-filled {
       ._label {
         --label-top: 0;
-        --label-font-size: var(--font-2xs);
+        --input-label-font-size: var(--font-2xs);
       }
     }
 
@@ -332,7 +337,13 @@ export default PaymentMethod.extend({
     ~ ._label {
       --label-top: 0;
       --label-color: var(--c-primary);
-      --label-font-size: var(--font-2xs);
+      --input-label-font-size: var(--font-2xs);
+    }
+  }
+
+  @include for-desktop {
+    ._content {
+      margin-left: var(--spacer-xl);
     }
   }
 }
