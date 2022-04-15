@@ -57,14 +57,6 @@ export const actions: ActionTree<BraintreeState, any> = {
       body: JSON.stringify(params)
     }).then(resp => { return resp.json() })
   },
-  async synchronize ({ commit }) {
-    const braintreeStorage = StorageManager.get('braintree');
-    const selectedMethod = await braintreeStorage.getItem('selected-method');
-
-    if (selectedMethod) {
-      commit(types.SET_SELECTED_METHOD, selectedMethod);
-    }
-  },
   async createBraintreeClient ({ dispatch }): Promise<braintree.Client> {
     const token = await dispatch('generateToken');
     const braintreeClient = await braintree.client.create({

@@ -1,44 +1,33 @@
 import { StorefrontModule } from '@vue-storefront/core/lib/modules';
-import { StorageManager } from '@vue-storefront/core/lib/storage-manager'
 import { coreHooks } from '@vue-storefront/core/hooks';
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 
 import { module } from './store'
-import { plugin } from './store/plugin';
-import { SET_PAYMENT_DATA, SN_BRAINTREE } from './store/mutation-types';
+import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from './store/mutation-types';
+import getComponentByMethodCode from './helpers/get-component-by-method-code.function';
+import supportedMethodsCodes from './types/SupportedMethodsCodes';
 
 export const Braintree: StorefrontModule = function ({ app, store }) {
   store.registerModule(SN_BRAINTREE, module);
 
   coreHooks.afterAppInit(() => {
-    const CURRENT_METHOD_CODE = 'braintree'
-
-    store.dispatch('checkout/addPaymentMethod', {
-      'title': 'Braintree',
-      'code': CURRENT_METHOD_CODE,
-      'cost': 0,
-      'costInclTax': 0,
-      'default': true,
-      'offline': false
-    })
-
-    store.subscribe(plugin);
-
-    StorageManager.init(SN_BRAINTREE);
-
     if (!app.$isServer) {
-      store.dispatch('braintree/synchronize');
       let isCurrentPaymentMethod = false
 
       EventBus.$on('checkout-payment-method-changed', (paymentMethodCode: string) => {
-        isCurrentPaymentMethod = paymentMethodCode === CURRENT_METHOD_CODE;
-      })
+        isCurrentPaymentMethod = Object.values(supportedMethodsCodes)
+          .includes(paymentMethodCode);
+      });
+
+      EventBus.$on('collect-methods-handled-by-other-modules', (methods: string[]) => {
+        methods.push(...Object.values(supportedMethodsCodes));
+      });
 
       const invokePlaceOrder = () => {
         if (isCurrentPaymentMethod) {
-          const paymentData = store.getters['braintree/paymentData'];
-          EventBus.$emit('checkout-do-placeOrder', { ...paymentData })
-          store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_DATA}`, {});
+          const paymentMethodNonce = store.getters['braintree/paymentMethodNonce'];
+          EventBus.$emit('checkout-do-placeOrder', { payment_method_nonce: paymentMethodNonce })
+          store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_METHOD_NONCE}`, undefined);
         }
       }
 
@@ -46,3 +35,5 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
     }
   })
 }
+
+export { getComponentByMethodCode, supportedMethodsCodes };

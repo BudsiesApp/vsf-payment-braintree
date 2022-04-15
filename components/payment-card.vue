@@ -1,6 +1,6 @@
 <template>
   <div class="checkout-card">
-    <slot name="title" />
+    <slot />
 
     <div class="_content" v-show="showContent">
       <div class="_row">
@@ -53,9 +53,8 @@ import { TranslateResult } from 'vue-i18n';
 
 import { Dictionary } from 'src/modules/budsies';
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
-import { SET_PAYMENT_DATA, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
+import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
 
-const PAYMENT_METHOD_CODE = 'gene_braintree_creditcard';
 const enum Fields {
   NUMBER = 'number',
   EXPIRATION_DATE = 'expirationDate',
@@ -109,40 +108,11 @@ export default PaymentMethod.extend({
     }
   },
   async created (): Promise<void> {
-    try {
-      this.hostedFieldsInstance = await braintree.hostedFields.create({
-        client: this.braintreeClient,
-        styles: {
-          'input': {
-            'font-size': '16px',
-            'color': '#535353'
-          },
-
-          '.number': {
-            'font-family': 'monospace'
-          },
-
-          '.valid': {
-            'color': 'green'
-          }
-        },
-        fields: {
-          number: {
-            selector: '#card-number'
-          },
-          cvv: {
-            selector: '#cvv'
-          },
-          expirationDate: {
-            selector: '#expiration-date'
-          }
-        }
-      });
-
-      this.addHostedFieldsEventListeners();
-    } catch (error) {
-      this.$emit('error', error);
+    if (!this.braintreeClient) {
+      return;
     }
+
+    this.createHostedFieldsInstance(this.braintreeClient);
   },
   beforeDestroy (): void {
     this.removeHostedFieldsEventListeners();
@@ -160,6 +130,46 @@ export default PaymentMethod.extend({
         this.fieldsValidationState[event.emittedBy].isValid = true;
       };
       this.hostedFieldsInstance.on('focus', this.fOnHostedFieldsFocus);
+    },
+    async createHostedFieldsInstance (braintreeClient: braintree.Client): Promise<void> {
+      if (this.hostedFieldsInstance) {
+        return;
+      }
+
+      try {
+        this.hostedFieldsInstance = await braintree.hostedFields.create({
+          client: braintreeClient,
+          styles: {
+            'input': {
+              'font-size': '16px',
+              'color': '#535353'
+            },
+
+            '.number': {
+              'font-family': 'monospace'
+            },
+
+            '.valid': {
+              'color': 'green'
+            }
+          },
+          fields: {
+            number: {
+              selector: '#card-number'
+            },
+            cvv: {
+              selector: '#cvv'
+            },
+            expirationDate: {
+              selector: '#expiration-date'
+            }
+          }
+        });
+
+        this.addHostedFieldsEventListeners();
+      } catch (error) {
+        this.$emit('error', error);
+      }
     },
     removeHostedFieldsEventListeners (): void {
       if (!this.hostedFieldsInstance) {
@@ -196,10 +206,7 @@ export default PaymentMethod.extend({
       try {
         const payload = await this.hostedFieldsInstance.tokenize();
 
-        this.$store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_DATA}`, {
-          payment_method_nonce: payload.nonce,
-          budsies_payment_method_code: PAYMENT_METHOD_CODE
-        });
+        this.$store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_METHOD_NONCE}`, payload.nonce);
 
         this.$emit('success');
       } catch (error) {
@@ -238,6 +245,17 @@ export default PaymentMethod.extend({
           default:
             this.errorMessage = this.$t('Something went wrong');
         }
+      }
+    }
+  },
+  watch: {
+    braintreeClient: {
+      handler (val) {
+        if (!val) {
+          return;
+        }
+
+        this.createHostedFieldsInstance(val);
       }
     }
   }
