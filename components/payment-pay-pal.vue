@@ -126,7 +126,7 @@ export default PaymentMethod.extend({
       margin: var(--spacer-sm) 0;
       justify-content: center;
       align-items: center;
-      padding: 0 var(--spacer-sm);
+      padding: 0;
   }
 
   @include for-desktop {

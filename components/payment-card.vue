@@ -4,27 +4,39 @@
 
     <div class="_content" v-show="showContent">
       <div class="_row">
-        <div class="_field" :class="{ '-error': showNumberError }">
-          <label for="card-number" class="_label">
-            {{ $t('Card Number') }}
-          </label>
+        <div
+          class="_field"
+          :class="{ '-error': showNumberError, '-filled': isNumberFieldFilled }"
+        >
           <div id="card-number" class="_input" />
+
+          <label for="card-number" class="_label">
+            {{ $t('Card number') }}
+          </label>
         </div>
       </div>
 
       <div class="_row">
-        <div class="_field" :class="{ '-error': showCvvError }">
+        <div
+          class="_field"
+          :class="{ '-error': showCvvError, '-filled': isCvvFieldFilled }"
+        >
+          <div id="cvv" class="_input" />
+
           <label for="cvv" class="_label">
             {{ $t('CVV') }}
           </label>
-          <div id="cvv" class="_input" />
         </div>
 
-        <div class="_field" :class="{ '-error': showExpirationDateError }">
-          <label for="expiration-date" class="_label">
-            {{ $t('Expiration Date') }}
-          </label>
+        <div
+          class="_field"
+          :class="{ '-error': showExpirationDateError, '-filled': isExpirationDateFieldFilled }"
+        >
           <div id="expiration-date" class="_input" />
+
+          <label for="expiration-date" class="_label">
+            {{ $t('Expiration date') }}
+          </label>
         </div>
       </div>
 
@@ -52,10 +64,19 @@ const enum Fields {
 export default PaymentMethod.extend({
   name: 'PaymentCard',
   data () {
-    const fieldsValidationState: Dictionary<boolean> = {
-      'number': true,
-      'cvv': true,
-      'expirationDate': true
+    const fieldsValidationState: Dictionary<{isValid: boolean, isEmpty: boolean}> = {
+      [Fields.NUMBER]: {
+        isValid: true,
+        isEmpty: true
+      },
+      [Fields.CVV]: {
+        isValid: true,
+        isEmpty: true
+      },
+      [Fields.EXPIRATION_DATE]: {
+        isValid: true,
+        isEmpty: true
+      }
     };
 
     return {
@@ -67,14 +88,23 @@ export default PaymentMethod.extend({
     }
   },
   computed: {
+    isCvvFieldFilled (): boolean {
+      return !this.fieldsValidationState[Fields.CVV].isEmpty;
+    },
+    isExpirationDateFieldFilled (): boolean {
+      return !this.fieldsValidationState[Fields.EXPIRATION_DATE].isEmpty;
+    },
+    isNumberFieldFilled (): boolean {
+      return !this.fieldsValidationState[Fields.NUMBER].isEmpty;
+    },
     showCvvError (): boolean {
-      return !this.fieldsValidationState[Fields.CVV];
+      return !this.fieldsValidationState[Fields.CVV].isValid;
     },
     showExpirationDateError (): boolean {
-      return !this.fieldsValidationState[Fields.EXPIRATION_DATE];
+      return !this.fieldsValidationState[Fields.EXPIRATION_DATE].isValid;
     },
     showNumberError (): boolean {
-      return !this.fieldsValidationState[Fields.NUMBER];
+      return !this.fieldsValidationState[Fields.NUMBER].isValid;
     }
   },
   async created (): Promise<void> {
@@ -97,7 +127,7 @@ export default PaymentMethod.extend({
       this.hostedFieldsInstance.on('blur', this.fOnHostedFieldsBlur);
 
       this.fOnHostedFieldsFocus = (event) => {
-        this.fieldsValidationState[event.emittedBy] = true;
+        this.fieldsValidationState[event.emittedBy].isValid = true;
       };
       this.hostedFieldsInstance.on('focus', this.fOnHostedFieldsFocus);
     },
@@ -156,9 +186,10 @@ export default PaymentMethod.extend({
     },
     onHostedFieldsBlur (event: HostedFieldsEvent): void {
       const fieldState = event.fields[event.emittedBy];
+      this.fieldsValidationState[event.emittedBy].isEmpty = fieldState.isEmpty;
 
       if ((!fieldState.isValid && !fieldState.isEmpty) || fieldState.isEmpty) {
-        this.fieldsValidationState[event.emittedBy] = false;
+        this.fieldsValidationState[event.emittedBy].isValid = false;
       }
 
       if (!this.showCvvError && !this.showExpirationDateError && !this.showNumberError) {
@@ -183,16 +214,16 @@ export default PaymentMethod.extend({
 
         if (braintreeError.details && braintreeError.details.invalidFieldKeys) {
           braintreeError.details.invalidFieldKeys.forEach((key: string) => {
-            this.fieldsValidationState[key] = false;
+            this.fieldsValidationState[key].isValid = false;
           })
         }
 
         switch (braintreeError.code) {
           case 'HOSTED_FIELDS_FIELDS_EMPTY':
             [Fields.EXPIRATION_DATE, Fields.NUMBER, Fields.CVV].forEach((key) => {
-              this.fieldsValidationState[key] = false;
+              this.fieldsValidationState[key].isValid = false;
             })
-            this.errorMessage = this.$t('Missed required fields');
+            this.errorMessage = this.$t('Please, fill required fields');
             break;
           case 'HOSTED_FIELDS_FIELDS_INVALID':
             this.errorMessage = this.$t('Some fields are invalid');
@@ -203,7 +234,7 @@ export default PaymentMethod.extend({
             break;
           case 'HOSTED_FIELDS_TOKENIZATION_CVV_VERIFICATION_FAILED':
             this.errorMessage = this.$t('CVV did not pass verification');
-            this.fieldsValidationState[Fields.CVV] = false;
+            this.fieldsValidationState[Fields.CVV].isValid = false;
             break;
           case 'HOSTED_FIELDS_FAILED_TOKENIZATION':
             this.errorMessage = this.$t('Please, check credentials');
@@ -232,10 +263,15 @@ export default PaymentMethod.extend({
 </script>
 
 <style lang="scss" scoped>
+@import "~@storefront-ui/shared/styles/helpers/breakpoints";
+
 .checkout-card {
+  --input-label-font-size: var(--font-size-base);
+
   ._content {
-    margin: var(--spacer-sm) 0 var(--spacer-sm);
-    padding: 0 var(--spacer-sm);
+    background-color: var(--c-white-darken);
+    margin-top: var(--spacer-sm);
+    padding: var(--spacer-sm);
   }
 
   ._row {
@@ -252,19 +288,53 @@ export default PaymentMethod.extend({
     border-bottom: 1px solid var(--c-light);
     width: 100%;
     position: relative;
+    padding: var(--spacer-sm) 0 var(--spacer-xs) 0;
+  }
+
+  ._label {
+    position: absolute;
+    top: var(--label-top, 50%);
+    color: var(--label-color, inherit);
+    font-weight: var(--font-normal);
+    font-family: var(--font-family-secondary);
+    line-height: 1;
+    font-size: var(--input-label-font-size, var(--font-lg));
+    transform: translate3d(0, calc(var(--input-label-top, 50%) * -1), 0);
+    transition: top 150ms linear, font-size 150ms linear;
+
+    &::after {
+      color: var(--c-primary);
+      content: '*'
+    }
   }
 
   ._field {
     flex: 1;
     margin-right: var(--spacer-lg);
+    position: relative;
 
     &:last-child {
       margin-right: 0;
     }
 
-    &.-error {
+    &.-filled {
       ._label {
-        color: var(--c-danger-variant);
+        --label-top: 0;
+        --input-label-font-size: var(--font-2xs);
+      }
+    }
+
+    &.-error {
+      .braintree-hosted-fields-focused {
+        border-bottom: 1px solid var(--c-primary);
+
+        ~ ._label {
+          color: var(--c-danger-variant);
+
+          &::after {
+            color: var(--c-danger-variant);
+          }
+        }
       }
 
       ._input {
@@ -279,9 +349,19 @@ export default PaymentMethod.extend({
     color: var(--c-danger-variant);
   }
 
-  ::v-deep {
-    .braintree-hosted-fields-focused {
-      border-bottom: 1px solid var(--c-primary);
+  .braintree-hosted-fields-focused {
+    border-bottom: 1px solid var(--c-primary);
+
+    ~ ._label {
+      --label-top: 0;
+      --label-color: var(--c-primary);
+      --input-label-font-size: var(--font-2xs);
+    }
+  }
+
+  @include for-desktop {
+    ._content {
+      margin-left: var(--spacer-xl);
     }
   }
 }
