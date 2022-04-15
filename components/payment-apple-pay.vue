@@ -62,13 +62,7 @@ export default PaymentMethod.extend({
     isApplePayAvailable (): boolean {
       ApplePaySession = (this.window as any).ApplePaySession;
 
-      if (!ApplePaySession ||
-     !ApplePaySession.canMakePayments()
-      ) {
-        return false;
-      }
-
-      return true;
+      return ApplePaySession && ApplePaySession.canMakePayments();
     },
     async onValidateMerchant (event: any, session: any): Promise<void> {
       if (!this.applePayCheckoutInstance) {
