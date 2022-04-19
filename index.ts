@@ -1,12 +1,12 @@
 import { StorefrontModule } from '@vue-storefront/core/lib/modules';
 import { coreHooks } from '@vue-storefront/core/hooks';
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
+import PaymentMethod from 'core/modules/cart/types/PaymentMethod';
 
 import { module } from './store'
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from './store/mutation-types';
 import getComponentByMethodCode from './helpers/get-component-by-method-code.function';
 import supportedMethodsCodes from './types/SupportedMethodsCodes';
-import PaymentMethod from 'core/modules/cart/types/PaymentMethod';
 
 export const Braintree: StorefrontModule = function ({ app, store }) {
   store.registerModule(SN_BRAINTREE, module);
