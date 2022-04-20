@@ -1,6 +1,7 @@
 import { StorefrontModule } from '@vue-storefront/core/lib/modules';
 import { coreHooks } from '@vue-storefront/core/hooks';
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
+import PaymentMethod from 'core/modules/cart/types/PaymentMethod';
 
 import { module } from './store'
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from './store/mutation-types';
@@ -31,7 +32,24 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
         }
       }
 
-      EventBus.$on('checkout-before-placeOrder', invokePlaceOrder)
+      const onBeforeReplacePaymentMethods = (methods: PaymentMethod[]) => {
+        methods.forEach((method) => {
+          if (!method.code || !Object.values(supportedMethodsCodes).includes(method.code)) {
+            return;
+          }
+
+          switch (method.code) {
+            case supportedMethodsCodes.PAY_PAL:
+              method.hint = app.$t('You will complete your payment via PayPal. After You will make payment, order will be automatically placed').toString();
+              break;
+            case supportedMethodsCodes.APPLE_PAY:
+              method.hint = app.$t('You will be presented with Apple Pay at the end of the checkout process').toString();
+          }
+        })
+      };
+
+      EventBus.$on('checkout-before-placeOrder', invokePlaceOrder);
+      EventBus.$on('before-replace-payment-methods', onBeforeReplacePaymentMethods);
     }
   })
 }

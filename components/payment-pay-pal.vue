@@ -133,6 +133,7 @@ export default PaymentMethod.extend({
     ._pay-pal-button-container {
       max-width: 50%;
       justify-content: flex-start;
+      margin-left: calc(var(--spacer-xl) + var(--spacer-sm));
     }
   }
 }
