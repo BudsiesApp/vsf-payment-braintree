@@ -1,43 +1,51 @@
 import braintree from 'braintree-web';
 import config from 'config'
 import { adjustMultistoreApiUrl } from '@vue-storefront/core/lib/multistore'
-import { StorageManager } from '@vue-storefront/core/lib/storage-manager'
+import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 
 import { BraintreeState } from '../types/BraintreeState'
 import { ActionTree } from 'vuex';
-import * as types from './mutation-types'
+import { BEFORE_FETCH } from 'src/modules/shared';
 
 // it's a good practice for all actions to return Promises with effect of their execution
 export const actions: ActionTree<BraintreeState, any> = {
   generateToken () {
     let url = config.braintree.endpoint + '/get-token'
-    console.log(url)
-    return fetch(url, {
+
+    const mode: RequestMode = 'cors';
+    const payload = {
       method: 'GET',
-      mode: 'cors',
+      mode,
       headers: {
         'Accept': 'application/json, text/plain, */*',
         'Content-Type': 'application/json'
       }
-    }).then(resp => { return resp.json() })
+    };
+
+    EventBus.$emit(BEFORE_FETCH, payload);
+
+    return fetch(url, payload).then(resp => { return resp.json() })
       .then((resp) => {
         console.debug(resp.result.token)
         return resp.result.token
       })
   },
   doPayment (params) {
-    let url = config.braintree.endpoint + '/do-payment'
-    console.log(url)
-    console.log(params)
-    return fetch(url, {
+    let url = config.braintree.endpoint + '/do-payment';
+    const mode: RequestMode = 'cors';
+    const payload = {
       method: 'POST',
-      mode: 'cors',
+      mode,
       headers: {
         'Accept': 'application/json, text/plain, */*',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(params)
-    }).then(resp => { return resp.json() })
+    };
+
+    EventBus.$emit(BEFORE_FETCH, payload);
+
+    return fetch(url, payload).then(resp => { return resp.json() })
       .then((resp) => {
         console.debug(resp)
         return resp
@@ -47,15 +55,20 @@ export const actions: ActionTree<BraintreeState, any> = {
   execute (params) {
     let url = config.paypal.endpoint.execute
     url = config.storeViews.multistore ? adjustMultistoreApiUrl(url) : url
-    return fetch(url, {
+    const mode: RequestMode = 'cors';
+    const payload = {
       method: 'POST',
-      mode: 'cors',
+      mode,
       headers: {
         'Accept': 'application/json, text/plain, */*',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(params)
-    }).then(resp => { return resp.json() })
+    };
+
+    EventBus.$emit(BEFORE_FETCH, payload);
+
+    return fetch(url, payload).then(resp => { return resp.json() })
   },
   async createBraintreeClient ({ dispatch }): Promise<braintree.Client> {
     const token = await dispatch('generateToken');
