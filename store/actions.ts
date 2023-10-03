@@ -5,7 +5,7 @@ import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 
 import { BraintreeState } from '../types/BraintreeState'
 import { ActionTree } from 'vuex';
-import { BEFORE_FETCH } from 'src/modules/shared';
+import { BEFORE_STORE_BACKEND_API_REQUEST } from 'src/modules/shared';
 
 // it's a good practice for all actions to return Promises with effect of their execution
 export const actions: ActionTree<BraintreeState, any> = {
@@ -22,7 +22,7 @@ export const actions: ActionTree<BraintreeState, any> = {
       }
     };
 
-    EventBus.$emit(BEFORE_FETCH, payload);
+    EventBus.$emit(BEFORE_STORE_BACKEND_API_REQUEST, payload);
 
     return fetch(url, payload).then(resp => { return resp.json() })
       .then((resp) => {
@@ -43,7 +43,7 @@ export const actions: ActionTree<BraintreeState, any> = {
       body: JSON.stringify(params)
     };
 
-    EventBus.$emit(BEFORE_FETCH, payload);
+    EventBus.$emit(BEFORE_STORE_BACKEND_API_REQUEST, payload);
 
     return fetch(url, payload).then(resp => { return resp.json() })
       .then((resp) => {
@@ -66,7 +66,7 @@ export const actions: ActionTree<BraintreeState, any> = {
       body: JSON.stringify(params)
     };
 
-    EventBus.$emit(BEFORE_FETCH, payload);
+    EventBus.$emit(BEFORE_STORE_BACKEND_API_REQUEST, payload);
 
     return fetch(url, payload).then(resp => { return resp.json() })
   },
