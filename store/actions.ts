@@ -1,11 +1,9 @@
-import braintree from 'braintree-web';
+import client, { Client } from 'braintree-web/dist/browser/client';
 import config from 'config'
 import { adjustMultistoreApiUrl } from '@vue-storefront/core/lib/multistore'
-import { StorageManager } from '@vue-storefront/core/lib/storage-manager'
 
 import { BraintreeState } from '../types/BraintreeState'
 import { ActionTree } from 'vuex';
-import * as types from './mutation-types'
 
 // it's a good practice for all actions to return Promises with effect of their execution
 export const actions: ActionTree<BraintreeState, any> = {
@@ -57,9 +55,9 @@ export const actions: ActionTree<BraintreeState, any> = {
       body: JSON.stringify(params)
     }).then(resp => { return resp.json() })
   },
-  async createBraintreeClient ({ dispatch }): Promise<braintree.Client> {
+  async createBraintreeClient ({ dispatch }): Promise<Client> {
     const token = await dispatch('generateToken');
-    const braintreeClient = await braintree.client.create({
+    const braintreeClient = await client.create({
       authorization: token
     });
 

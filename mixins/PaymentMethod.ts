@@ -1,3 +1,4 @@
+import { Client } from 'braintree-web/dist/browser/client';
 import { currentStoreView } from '@vue-storefront/core/lib/multistore';
 import PaymentDetails from '@vue-storefront/core/modules/checkout/types/PaymentDetails';
 import Vue, { PropType, VueConstructor } from 'vue';
@@ -11,7 +12,7 @@ interface InjectedServices {
 export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
   props: {
     braintreeClient: {
-      type: Object as PropType<braintree.Client | undefined>,
+      type: Object as PropType<Client | undefined>,
       default: undefined
     },
     showContent: {

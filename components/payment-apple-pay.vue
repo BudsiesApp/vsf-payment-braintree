@@ -6,10 +6,10 @@
 
 <script lang="ts">
 import config from 'config'
-import braintree, { ApplePay } from 'braintree-web';
+import applePay, { ApplePay } from 'braintree-web/dist/browser/apple-pay';
 
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
-import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
+import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types'; ;
 
 let ApplePaySession: any;
 
@@ -34,7 +34,7 @@ export default PaymentMethod.extend({
       }
 
       try {
-        this.applePayCheckoutInstance = await braintree.applePay.create({ client: braintreeClient });
+        this.applePayCheckoutInstance = await applePay.create({ client: braintreeClient });
       } catch (error) {
         this.$emit('error', error);
       }

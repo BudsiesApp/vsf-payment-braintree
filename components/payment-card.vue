@@ -48,7 +48,7 @@
 </template>
 
 <script lang="ts">
-import braintree, { BraintreeError, HostedFields, HostedFieldsEvent } from 'braintree-web';
+import hostedFields, { BraintreeError, HostedFields, HostedFieldsEvent } from 'braintree-web/dist/browser/hosted-fields';
 import { TranslateResult } from 'vue-i18n';
 
 import { Dictionary } from 'src/modules/budsies';
@@ -137,7 +137,7 @@ export default PaymentMethod.extend({
       }
 
       try {
-        this.hostedFieldsInstance = await braintree.hostedFields.create({
+        this.hostedFieldsInstance = await hostedFields.create({
           client: braintreeClient,
           styles: {
             'input': {
