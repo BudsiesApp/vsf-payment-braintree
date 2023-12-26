@@ -1,4 +1,4 @@
-import braintree from 'braintree-web';
+import client, { Client } from 'braintree-web/dist/browser/client';
 import config from 'config'
 import { adjustMultistoreApiUrl } from '@vue-storefront/core/lib/multistore'
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
@@ -70,9 +70,9 @@ export const actions: ActionTree<BraintreeState, any> = {
 
     return fetch(url, payload).then(resp => { return resp.json() })
   },
-  async createBraintreeClient ({ dispatch }): Promise<braintree.Client> {
+  async createBraintreeClient ({ dispatch }): Promise<Client> {
     const token = await dispatch('generateToken');
-    const braintreeClient = await braintree.client.create({
+    const braintreeClient = await client.create({
       authorization: token
     });
 

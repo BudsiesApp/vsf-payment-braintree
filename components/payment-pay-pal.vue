@@ -11,8 +11,7 @@
 </template>
 
 <script lang="ts">
-import braintree, { PayPalCheckout } from 'braintree-web';
-import { PayPalCheckoutTokenizationOptions } from 'braintree-web/modules/paypal-checkout';
+import paypalCheckout, { PayPalCheckout, PayPalCheckoutTokenizationOptions } from 'braintree-web/dist/browser/paypal-checkout';
 
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
@@ -49,7 +48,7 @@ export default PaymentMethod.extend({
       }
 
       try {
-        this.paypalCheckoutInstance = await braintree.paypalCheckout.create({
+        this.paypalCheckoutInstance = await paypalCheckout.create({
           client: braintreeClient
         });
 
