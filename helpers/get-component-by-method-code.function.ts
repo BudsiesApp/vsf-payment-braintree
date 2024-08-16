@@ -8,10 +8,13 @@ import supportedMethodsCodes from '../types/SupportedMethodsCodes';
 export default function getComponentByMethodCode (methodCode: string): Component | undefined {
   switch (methodCode) {
     case supportedMethodsCodes.PAY_PAL:
+    case supportedMethodsCodes.MAGENTO1_PAY_PAL:
       return PaymentPayPal;
     case supportedMethodsCodes.CARD:
+    case supportedMethodsCodes.MAGENTO1_CARD:
       return PaymentCard;
     case supportedMethodsCodes.APPLE_PAY:
+    case supportedMethodsCodes.MAGENTO1_APPLE_PAY:
       return PaymentApplePay;
   }
 }

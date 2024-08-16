@@ -40,14 +40,17 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
 
         switch (method.code) {
           case supportedMethodsCodes.PAY_PAL:
+          case supportedMethodsCodes.MAGENTO1_PAY_PAL:
             method.hint = app.$t('You will complete your payment via PayPal. After You will make payment, order will be automatically placed').toString();
             method.icon = paypalIcon;
             break;
           case supportedMethodsCodes.APPLE_PAY:
+          case supportedMethodsCodes.MAGENTO1_APPLE_PAY:
             method.hint = app.$t('You will be presented with Apple Pay at the end of the checkout process').toString();
             method.icon = applePayIcon;
             break;
           case supportedMethodsCodes.CARD:
+          case supportedMethodsCodes.MAGENTO1_CARD:
             method.icon = cardsIcon;
         }
       })
