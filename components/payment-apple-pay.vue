@@ -8,8 +8,10 @@
 import config from 'config'
 import applePay, { ApplePay } from 'braintree-web/dist/browser/apple-pay';
 
+import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
+import { PAYMENT_ERROR_EVENT } from 'src/modules/shared';
 
 let ApplePaySession: any;
 
@@ -36,7 +38,7 @@ export default PaymentMethod.extend({
       try {
         this.applePayCheckoutInstance = await applePay.create({ client: braintreeClient });
       } catch (error) {
-        this.$emit('error', error);
+        EventBus.$emit(PAYMENT_ERROR_EVENT);
       }
     },
     doPayment () {
@@ -77,7 +79,7 @@ export default PaymentMethod.extend({
 
         session.completeMerchantValidation(merchantSession);
       } catch (error) {
-        this.$emit('error', error)
+        EventBus.$emit(PAYMENT_ERROR_EVENT);
       }
     },
     async onPaymentAuthorized (event: any, session: any): Promise<void> {
@@ -96,6 +98,7 @@ export default PaymentMethod.extend({
         session.completePayment(ApplePaySession.STATUS_SUCCESS);
       } catch (error) {
         session.completePayment(ApplePaySession.STATUS_FAILURE);
+        EventBus.$emit(PAYMENT_ERROR_EVENT);
       }
     }
   },

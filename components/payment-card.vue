@@ -51,9 +51,11 @@
 import hostedFields, { BraintreeError, HostedFields, HostedFieldsEvent } from 'braintree-web/dist/browser/hosted-fields';
 import { TranslateResult } from 'vue-i18n';
 
+import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 import { Dictionary } from 'src/modules/budsies';
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
+import { PAYMENT_ERROR_EVENT } from 'src/modules/shared';
 
 const enum Fields {
   NUMBER = 'number',
@@ -168,7 +170,7 @@ export default PaymentMethod.extend({
 
         this.addHostedFieldsEventListeners();
       } catch (error) {
-        this.$emit('error', error);
+        EventBus.$emit(PAYMENT_ERROR_EVENT);
       }
     },
     removeHostedFieldsEventListeners (): void {
@@ -245,6 +247,8 @@ export default PaymentMethod.extend({
           default:
             this.errorMessage = this.$t('Something went wrong');
         }
+
+        EventBus.$emit(PAYMENT_ERROR_EVENT);
       }
     }
   },
