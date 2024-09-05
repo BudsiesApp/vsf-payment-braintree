@@ -13,8 +13,10 @@
 <script lang="ts">
 import paypalCheckout, { PayPalCheckout, PayPalCheckoutTokenizationOptions } from 'braintree-web/dist/browser/paypal-checkout';
 
+import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
+import { PAYMENT_ERROR_EVENT } from 'src/modules/shared';
 
 enum FlowType {
   Vault = 'vault',
@@ -59,7 +61,7 @@ export default PaymentMethod.extend({
 
         await this.onPayPalSdkLoaded(this.paypalCheckoutInstance);
       } catch (error) {
-        this.$emit('error', error);
+        EventBus.$emit(PAYMENT_ERROR_EVENT);
       }
     },
     async onPayPalSdkLoaded (paypalCheckoutInstance: PayPalCheckout): Promise<void> {
@@ -85,7 +87,7 @@ export default PaymentMethod.extend({
         onApprove: (data: PayPalCheckoutTokenizationOptions) => {
           return paypalCheckoutInstance.tokenizePayment(data, (error, payload) => {
             if (error) {
-              this.$emit('error', error);
+              EventBus.$emit(PAYMENT_ERROR_EVENT);
               return;
             }
 
@@ -94,8 +96,8 @@ export default PaymentMethod.extend({
             this.$emit('success');
           })
         },
-        onError: (error: string) => {
-          this.$emit('error', error)
+        onError: (_error: string) => {
+          EventBus.$emit(PAYMENT_ERROR_EVENT);
         }
       });
 
