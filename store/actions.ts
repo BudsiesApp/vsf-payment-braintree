@@ -22,7 +22,11 @@ export const actions: ActionTree<BraintreeState, any> = {
       }
     };
 
-    EventBus.$emit(BEFORE_STORE_BACKEND_API_REQUEST, payload);
+    const eventPayload = {
+      url
+    };
+
+    EventBus.$emit(BEFORE_STORE_BACKEND_API_REQUEST, eventPayload);
 
     return fetch(url, payload).then(resp => { return resp.json() })
       .then((resp) => {
@@ -43,7 +47,11 @@ export const actions: ActionTree<BraintreeState, any> = {
       body: JSON.stringify(params)
     };
 
-    EventBus.$emit(BEFORE_STORE_BACKEND_API_REQUEST, payload);
+    const eventPayload = {
+      url
+    };
+
+    EventBus.$emit(BEFORE_STORE_BACKEND_API_REQUEST, eventPayload);
 
     return fetch(url, payload).then(resp => { return resp.json() })
       .then((resp) => {
@@ -66,7 +74,11 @@ export const actions: ActionTree<BraintreeState, any> = {
       body: JSON.stringify(params)
     };
 
-    EventBus.$emit(BEFORE_STORE_BACKEND_API_REQUEST, payload);
+    const eventPayload = {
+      url
+    };
+
+    EventBus.$emit(BEFORE_STORE_BACKEND_API_REQUEST, eventPayload);
 
     return fetch(url, payload).then(resp => { return resp.json() })
   },
