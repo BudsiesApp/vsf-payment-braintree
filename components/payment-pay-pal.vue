@@ -5,7 +5,7 @@
     <div
       class="_pay-pal-button-container"
       id="pay-pal-button-container"
-      v-show="showContent"
+      v-show="showPayPalButtonContainer"
     />
   </div>
 </template>
@@ -31,6 +31,12 @@ enum Intent {
 
 export default PaymentMethod.extend({
   name: 'PaymentPayPal',
+  props: {
+    isOrderPlacementDisabled: {
+      type: Boolean,
+      default: false
+    }
+  },
   data () {
     return {
       paypalCheckoutInstance: undefined as braintree.PayPalCheckout | undefined
@@ -42,6 +48,11 @@ export default PaymentMethod.extend({
     }
 
     this.createPaypalCheckoutInstance(this.braintreeClient);
+  },
+  computed: {
+    showPayPalButtonContainer (): boolean {
+      return this.showContent && !this.isOrderPlacementDisabled;
+    }
   },
   methods: {
     async createPaypalCheckoutInstance (braintreeClient: braintree.Client): Promise<void> {
