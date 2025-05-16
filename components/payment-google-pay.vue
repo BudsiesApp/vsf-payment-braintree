@@ -57,8 +57,16 @@ export default PaymentMethod.extend({
 
       const google = (this.window as any).google;
 
+      const environment = this.getEnvironment();
+      const merchantId = config.braintree.googlePay.merchantId;
+
+      if (environment !== 'TEST' && !merchantId) {
+        this.isGooglePayAvailable = false;
+        return;
+      }
+
       this.googlePayClient = new google.payments.api.PaymentsClient({
-        environment: this.getEnvironment()
+        environment
       });
 
       if (this.googlePayCheckoutInstance) {
@@ -69,7 +77,7 @@ export default PaymentMethod.extend({
         this.googlePayCheckoutInstance = await googlePayment.create({
           client: braintreeClient,
           googlePayVersion: 2,
-          merchantId: config.braintree.googlePay.merchantId
+          merchantId
         });
 
         const isReadyToPay = await this.googlePayClient.isReadyToPay({
