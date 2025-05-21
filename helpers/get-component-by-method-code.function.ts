@@ -1,9 +1,11 @@
 import { Component } from 'vue';
 
-import PaymentPayPal from '../components/payment-pay-pal.vue';
-import PaymentCard from '../components/payment-card.vue';
-import PaymentApplePay from '../components/payment-apple-pay.vue';
 import supportedMethodsCodes from '../types/SupportedMethodsCodes';
+
+import PaymentApplePay from '../components/payment-apple-pay.vue';
+import PaymentCard from '../components/payment-card.vue';
+import PaymentGooglePay from '../components/payment-google-pay.vue';
+import PaymentPayPal from '../components/payment-pay-pal.vue';
 
 export default function getComponentByMethodCode (methodCode: string): Component | undefined {
   switch (methodCode) {
@@ -16,5 +18,7 @@ export default function getComponentByMethodCode (methodCode: string): Component
     case supportedMethodsCodes.APPLE_PAY:
     case supportedMethodsCodes.MAGENTO1_APPLE_PAY:
       return PaymentApplePay;
+    case supportedMethodsCodes.GOOGLE_PAY:
+      return PaymentGooglePay
   }
 }

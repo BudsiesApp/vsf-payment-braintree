@@ -4,7 +4,8 @@ const supportedMethodsCodes = {
   MAGENTO1_APPLE_PAY: 'gene_braintree_applepay',
   APPLE_PAY: 'braintree_applepay',
   MAGENTO1_CARD: 'gene_braintree_creditcard',
-  CARD: 'braintree'
+  CARD: 'braintree',
+  GOOGLE_PAY: 'braintree_googlepay'
 }
 
 export default supportedMethodsCodes;
