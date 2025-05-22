@@ -77,7 +77,7 @@ export default PaymentMethod.extend({
         this.googlePayCheckoutInstance = await googlePayment.create({
           client: braintreeClient,
           googlePayVersion: 2,
-          merchantId
+          googleMerchantId: merchantId
         });
 
         const isReadyToPay = await this.googlePayClient.isReadyToPay({
