@@ -6,7 +6,7 @@ import Vue, { PropType, VueConstructor } from 'vue';
 import { InjectType } from 'src/modules/shared';
 
 interface InjectedServices {
-  window: Window
+  window: Window & typeof window
 }
 
 export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
