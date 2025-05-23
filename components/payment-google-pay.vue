@@ -80,10 +80,12 @@ export default PaymentMethod.extend({
           googleMerchantId: merchantId
         });
 
+        const paymentDataRequest = await this.googlePayCheckoutInstance.createPaymentDataRequest();
+
         const isReadyToPay = await this.googlePayClient.isReadyToPay({
           apiVersion: 2,
           apiVersionMinor: 0,
-          allowedPaymentMethods: this.googlePayCheckoutInstance.createPaymentDataRequest().allowedPaymentMethods
+          allowedPaymentMethods: paymentDataRequest.allowedPaymentMethods
         });
 
         this.isGooglePayAvailable = isReadyToPay.result;
@@ -109,8 +111,6 @@ export default PaymentMethod.extend({
         var paymentData = await this.googlePayClient.loadPaymentData(paymentRequest);
 
         var tokenizePayload = await this.googlePayCheckoutInstance.parseResponse(paymentData);
-
-        tokenizePayload.rawPaymentData = paymentData
 
         this.$store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_METHOD_NONCE}`, tokenizePayload.nonce);
 
