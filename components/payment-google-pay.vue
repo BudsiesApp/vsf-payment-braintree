@@ -150,10 +150,11 @@ export default PaymentMethod.extend({
                 continue;
               }
 
+              const price = item.price_incl_tax?.toString();
               convertedShippingOptions.push({
                 id: item.method_code,
                 label: item.method_title,
-                description: item.price_incl_tax?.toString()
+                description: price ? `$${price}` : ''
               });
             }
 
