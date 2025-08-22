@@ -18,7 +18,7 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
 
     EventBus.$on('checkout-payment-method-changed', (paymentMethodCode: string) => {
       isCurrentPaymentMethod = Object.values(supportedMethodsCodes)
-        .includes(paymentMethodCode);
+        .includes(paymentMethodCode as supportedMethodsCodes);
     });
 
     EventBus.$on('collect-methods-handled-by-other-modules', (methods: string[]) => {
@@ -35,7 +35,7 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
 
     const onBeforeReplacePaymentMethods = (methods: PaymentMethod[]) => {
       methods.forEach((method) => {
-        if (!method.code || !Object.values(supportedMethodsCodes).includes(method.code)) {
+        if (!method.code || !Object.values(supportedMethodsCodes).includes(method.code as supportedMethodsCodes)) {
           return;
         }
 
