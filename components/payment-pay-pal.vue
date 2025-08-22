@@ -160,7 +160,7 @@ export default PaymentMethod.extend({
         },
         fundingSource: paypal.FUNDING.PAYPAL,
         style: {
-          label: 'pay',
+          label: this.isExpressCheckout ? 'checkout' : 'pay',
           color: 'blue',
           height: 40,
           disableMaxWidth: true
