@@ -93,7 +93,7 @@ export default PaymentMethod.extend({
               throw new Error('onExpressCheckoutAuthorized is missing');
             }
 
-            const result = await this.onExpressCheckoutAuthorized({
+            await this.onExpressCheckoutAuthorized({
               paymentMethod: supportedMethodsCodes.GOOGLE_PAY,
               customer,
               shippingDetails: additionalAddressData,

@@ -218,7 +218,11 @@ export default PaymentMethod.extend({
               streetAddress: shippingAddressData.address_line_1
             }
 
-            const result = await this.onExpressCheckoutAuthorized(
+            if (!this.onExpressCheckoutAuthorized) {
+              throw new Error('onExpressCheckoutAuthorized is not defined');
+            }
+
+            await this.onExpressCheckoutAuthorized(
               {
                 paymentMethod: supportedMethodsCodes.PAY_PAL,
                 customer: {

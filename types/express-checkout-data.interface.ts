@@ -40,8 +40,3 @@ export interface ExpressCheckoutUpdateData {
   availableShippingMethods: ShippingMethod[],
   selectedShippingMethod: string
 }
-
-export interface ExpressCheckoutAuthorizedCallbackResult {
-  success: boolean,
-  requiredFieldsMissing: string[]
-}

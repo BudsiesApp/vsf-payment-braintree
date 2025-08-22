@@ -35,7 +35,7 @@ import PaymentGooglePay from 'src/modules/payment-braintree/components/payment-g
 
 import { PaymentType } from '../types/payment-type';
 import { SN_BRAINTREE, SET_PAYMENT_METHOD_NONCE } from '../store/mutation-types';
-import { ExpressCheckoutAuthorizedCallbackData, ExpressCheckoutAuthorizedCallbackResult, ExpressCheckoutUpdateData, ShippingDetailsChangedCallbackData } from '../types/express-checkout-data.interface';
+import { ExpressCheckoutAuthorizedCallbackData, ExpressCheckoutUpdateData, ShippingDetailsChangedCallbackData } from '../types/express-checkout-data.interface';
 
 type Platform = 'ios' | 'mac' | 'android' | 'windows' | 'other';
 
@@ -152,7 +152,7 @@ export default defineComponent({
 
     const { prepareOrderData } = useOrderCreation(context);
 
-    const onExpressCheckoutAuthorized = async (data: ExpressCheckoutAuthorizedCallbackData): Promise<ExpressCheckoutAuthorizedCallbackResult> => {
+    const onExpressCheckoutAuthorized = async (data: ExpressCheckoutAuthorizedCallbackData): Promise<void> => {
       await updateCustomerData(data.customer);
 
       root.$store.commit(CHECKOUT_UPDATE_SHIPPING_DETAILS_MUTATION, data.shippingDetails);
@@ -161,11 +161,6 @@ export default defineComponent({
         CHECKOUT_UPDATE_PAYMENT_DETAILS_MUTATION,
         { paymentMethod: data.paymentMethod }
       );
-
-      return {
-        success: true,
-        requiredFieldsMissing: []
-      }
     };
 
     const onPaymentSuccess = async (): Promise<void> => {

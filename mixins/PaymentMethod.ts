@@ -27,7 +27,7 @@ export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
       default: PaymentType.PAYMENT
     },
     onExpressCheckoutAuthorized: {
-      type: Function as PropType<((data: ExpressCheckoutAuthorizedCallbackData) => Promise<ExpressCheckoutAuthorizedCallbackData>) | undefined>,
+      type: Function as PropType<((data: ExpressCheckoutAuthorizedCallbackData) => Promise<void>) | undefined>,
       default: undefined
     },
     onShippingDetailsChanged: {
