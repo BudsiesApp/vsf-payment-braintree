@@ -1,8 +1,9 @@
 <template>
   <div class="express-checkout" v-if="braintreeClient">
-    <div class="express-buttons" :class="{ 'express-buttons--disabled': isOrderPlacementDisabled }">
+    <div class="_buttons" :class="{ 'express-buttons--disabled': isOrderPlacementDisabled }">
       <component
         v-for="btn in sorted"
+        class="_button"
         :is="btn.is"
         :key="btn.key"
         :braintree-client="braintreeClient"
@@ -201,11 +202,10 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .express-checkout {
-  display: flex;
-  flex-direction: column;
-  row-gap: var(--spacer-sm);
+  ._buttons {
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--spacer-sm);
+  }
 }
-
-.express-buttons--disabled { opacity: 0.6; pointer-events: none; }
-
 </style>

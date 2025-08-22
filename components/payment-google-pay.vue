@@ -193,7 +193,8 @@ export default PaymentMethod.extend({
 
       const button = this.googlePayClient.createButton({
         onClick: doPayment,
-        buttonType: 'checkout'
+        buttonType: 'checkout',
+        buttonSizeMode: 'fill'
       });
 
       await this.$nextTick();

@@ -1,5 +1,5 @@
 <template>
-  <div class="payment-pay-pal">
+  <div class="payment-pay-pal" :class="{'-express-checkout': isExpressCheckout}">
     <slot />
 
     <div
@@ -161,7 +161,9 @@ export default PaymentMethod.extend({
         fundingSource: paypal.FUNDING.PAYPAL,
         style: {
           label: 'pay',
-          color: 'blue'
+          color: 'blue',
+          height: 40,
+          disableMaxWidth: true
         },
         createOrder: () => {
           const paymentData: PayPalCheckoutCreatePaymentOptions = {
@@ -279,6 +281,13 @@ export default PaymentMethod.extend({
       justify-content: center;
       align-items: center;
       padding: 0;
+  }
+
+  &.-express-checkout {
+    ._pay-pal-button-container {
+      max-width: 100%;
+      margin: 0;
+    }
   }
 
   @include for-desktop {

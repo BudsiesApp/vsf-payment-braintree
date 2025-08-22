@@ -48,6 +48,9 @@ export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
     },
     currency (): string {
       return currentStoreView().i18n.currencyCode;
+    },
+    isExpressCheckout (): boolean {
+      return this.type === PaymentType.EXPRESS_CHECKOUT;
     }
   }
 });
