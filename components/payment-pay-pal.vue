@@ -199,7 +199,6 @@ export default PaymentMethod.extend({
               });
             }
 
-            debugger;
             paymentData.enableShippingAddress = true;
             paymentData.shippingOptions = convertedShippingOptions;
           }
@@ -208,7 +207,7 @@ export default PaymentMethod.extend({
         },
         onApprove: async (data: PayPalCheckoutTokenizationOptions, actions: any) => {
           if (this.type === PaymentType.EXPRESS_CHECKOUT) {
-            const orderData = await actions.order.capture();
+            const orderData = await actions.order.get();
 
             const purchaseUnitData = orderData.purchase_units[0];
             const [shippingFirstName, shippingLastName] = purchaseUnitData.shipping.name.full_name.split(' ');

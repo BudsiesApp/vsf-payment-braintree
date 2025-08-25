@@ -85,6 +85,8 @@ export default defineComponent({
 
     function onOrderAfterPlaced (payload: any) {
       root.$store.commit(CHECKOUT_UPDATE_EXPRESS_CHECKOUT_DATA_MUTATION, payload);
+      root.$store.commit(CHECKOUT_SET_THANKYOU_MUTATION, true);
+      root.$router.push({ name: 'checkout', params: { success: 'success' } });
     }
 
     onBeforeMount(async () => {
@@ -171,15 +173,11 @@ export default defineComponent({
         registerModule(OrderModule);
 
         const paymentMethodNonce = root.$store.getters['braintree/paymentMethodNonce'];
+        root.$store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_METHOD_NONCE}`, undefined);
         await root.$store.dispatch(
           'checkout/placeOrder',
           { order: prepareOrderData({ payment_method_nonce: paymentMethodNonce }) }
         );
-
-        root.$store.commit(CHECKOUT_SET_THANKYOU_MUTATION, true);
-        root.$store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_METHOD_NONCE}`, undefined);
-
-        root.$router.push({ name: 'checkout', params: { success: 'success' } });
       } finally {
         isPlacing.value = false;
       }
