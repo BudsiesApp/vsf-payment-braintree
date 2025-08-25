@@ -1,6 +1,6 @@
 <template>
   <div class="express-checkout" v-if="braintreeClient">
-    <div class="_buttons" :class="{ 'express-buttons--disabled': isOrderPlacementDisabled }">
+    <div class="_buttons">
       <component
         v-for="btn in sorted"
         class="_button"
@@ -62,21 +62,22 @@ export default defineComponent({
     });
 
     const sorted = computed(() => {
-      let order: ('apple' | 'paypal' | 'google')[] = ['paypal', 'google'];
-      // let order: ('apple' | 'paypal' | 'google')[] = ['google'];
+      let order: ('apple' | 'paypal' | 'google')[] = [];
 
-      // const order: ('apple' | 'paypal' | 'google')[] = (() => {
-      //   if (platform.value === 'ios' || platform.value === 'mac') return ['apple', 'paypal', 'google'];
-      //   if (platform.value === 'android') return ['google', 'paypal'];
-      //   if (platform.value === 'windows') return ['paypal', 'google'];
-      //   return ;
-      // })();
+      if (['ios', 'mac'].includes(platform.value)) {
+        order = ['apple', 'paypal', 'google'];
+      } else if (platform.value === 'android') {
+        order = ['google', 'paypal', 'apple'];
+      } else {
+        order = ['paypal', 'google', 'apple'];
+      }
 
       const map = {
         apple: { is: 'PaymentApplePay', key: 'apple' },
         paypal: { is: 'PaymentPayPal', key: 'paypal' },
         google: { is: 'PaymentGooglePay', key: 'google' }
-      } as const;
+      };
+
       return order.map(k => map[k]);
     });
 
@@ -90,8 +91,6 @@ export default defineComponent({
       braintreeClient.value = await root.$store.dispatch('braintree/createBraintreeClient');
       EventBus.$on('order-after-placed', onOrderAfterPlaced);
     });
-
-    const isOrderPlacementDisabled = computed<boolean>(() => !braintreeClient.value || isPlacing.value);
 
     const totals = computed<number>(() => {
       const totals = root.$store.getters['cart/getTotals'];
@@ -188,7 +187,6 @@ export default defineComponent({
 
     return {
       braintreeClient,
-      isOrderPlacementDisabled,
       onShippingDetailsChanged,
       onExpressCheckoutAuthorized,
       onPaymentSuccess,

@@ -1,7 +1,7 @@
 <template>
   <div class="payment-google-pay" v-if="!!googlePayCheckoutInstance && isGooglePayAvailable">
     <slot>
-      <div id="google-pay-button" ref="buttonContainer" />
+      <div ref="buttonContainer" />
     </slot>
   </div>
 </template>
@@ -51,7 +51,7 @@ export default PaymentMethod.extend({
         shippingAddressRequired: true,
         shippingAddressParameters: {
           phoneNumberRequired: true
-        },
+        } as any,
         shippingOptionRequired: true,
         callbackIntents: ['SHIPPING_ADDRESS', 'SHIPPING_OPTION', 'PAYMENT_AUTHORIZATION']
       };
