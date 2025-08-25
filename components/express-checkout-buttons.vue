@@ -23,7 +23,8 @@ import {
   defineComponent,
   inject,
   ref,
-  onBeforeMount
+  onBeforeMount,
+  onBeforeUnmount
 } from '@vue/composition-api';
 
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus';
@@ -33,6 +34,7 @@ import { CHECKOUT_UPDATE_SHIPPING_DETAILS_MUTATION, CHECKOUT_UPDATE_PAYMENT_DETA
 import PaymentApplePay from 'src/modules/payment-braintree/components/payment-apple-pay.vue';
 import PaymentPayPal from 'src/modules/payment-braintree/components/payment-pay-pal.vue';
 import PaymentGooglePay from 'src/modules/payment-braintree/components/payment-google-pay.vue';
+import { PAYMENT_ERROR_EVENT } from 'src/modules/shared';
 
 import { PaymentType } from '../types/payment-type';
 import { SN_BRAINTREE, SET_PAYMENT_METHOD_NONCE } from '../store/mutation-types';
@@ -89,9 +91,23 @@ export default defineComponent({
       root.$router.push({ name: 'checkout', params: { success: 'success' } });
     }
 
+    function onPaymentErrorEventHandler () {
+      root.$store.dispatch('notification/spawnNotification', {
+        type: 'danger',
+        message: root.$t('Something went wrong. Please try another payment method'),
+        action1: { label: root.$t('OK') }
+      });
+    }
+
     onBeforeMount(async () => {
       braintreeClient.value = await root.$store.dispatch('braintree/createBraintreeClient');
+      EventBus.$on(PAYMENT_ERROR_EVENT, onPaymentErrorEventHandler);
       EventBus.$on('order-after-placed', onOrderAfterPlaced);
+    });
+
+    onBeforeUnmount(() => {
+      EventBus.$off('order-after-placed', onOrderAfterPlaced);
+      EventBus.$off(PAYMENT_ERROR_EVENT, onPaymentErrorEventHandler);
     });
 
     const totals = computed<number>(() => {
