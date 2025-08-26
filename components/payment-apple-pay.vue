@@ -1,10 +1,11 @@
 <template>
-  <div class="checkout-apple-pay" v-if="!!applePayCheckoutInstance">
+  <div class="payment-apple-pay" v-if="!!applePayCheckoutInstance">
     <slot>
       <apple-pay-button
         buttonstyle="black"
         type="check-out"
         ref="buttonContainer"
+        class="_express-checkout-button"
         v-if="isExpressCheckout"
         @click="doPayment"
       />
@@ -260,3 +261,12 @@ export default PaymentMethod.extend({
   }
 })
 </script>
+
+<style lang="scss" scoped>
+.payment-apple-pay {
+  ._express-checkout-button {
+    --apple-pay-button-width: 100%;
+    --apple-pay-button-height: 40px;
+  }
+}
+</style>
