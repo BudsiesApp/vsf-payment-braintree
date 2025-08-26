@@ -14,6 +14,8 @@ import cardsIcon from './assets/cards-icon.png';
 export const Braintree: StorefrontModule = function ({ app, store }) {
   if (!app.$isServer && !store.hasModule(SN_BRAINTREE)) {
     store.registerModule(SN_BRAINTREE, module);
+    store.dispatch('braintree/createBraintreeClient');
+
     let isCurrentPaymentMethod = false
 
     EventBus.$on('checkout-payment-method-changed', (paymentMethodCode: string) => {

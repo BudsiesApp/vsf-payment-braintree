@@ -14,6 +14,7 @@
 </template>
 
 <script lang="ts">
+import Vue from 'vue';
 import config from 'config'
 import applePay, { ApplePay } from 'braintree-web/dist/browser/apple-pay';
 
@@ -26,6 +27,8 @@ import supportedMethodsCodes from '../types/SupportedMethodsCodes';
 import { AdditionalAddressData, ExpressCheckoutAuthorizedCallbackData, MainAddressData, ShippingDetailsChangedCallbackData } from '../types/express-checkout-data.interface';
 
 let ApplePaySession: any;
+
+Vue.config.ignoredElements = ['apple-pay-button'];
 
 export default PaymentMethod.extend({
   name: 'PaymentApplePay',

@@ -26,6 +26,7 @@ import {
   onBeforeMount,
   onBeforeUnmount
 } from '@vue/composition-api';
+import { Client } from 'braintree-web';
 
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus';
 import { registerModule } from '@vue-storefront/core/lib/modules';
@@ -83,7 +84,7 @@ export default defineComponent({
       return order.map(k => map[k]);
     });
 
-    const braintreeClient = ref(null);
+    const braintreeClient = computed<Client>(() => root.$store.getters['braintree/braintreeClient']);
 
     function onOrderAfterPlaced (payload: any) {
       root.$store.commit(CHECKOUT_UPDATE_EXPRESS_CHECKOUT_DATA_MUTATION, payload);
@@ -100,9 +101,9 @@ export default defineComponent({
     }
 
     onBeforeMount(async () => {
-      braintreeClient.value = await root.$store.dispatch('braintree/createBraintreeClient');
       EventBus.$on(PAYMENT_ERROR_EVENT, onPaymentErrorEventHandler);
       EventBus.$on('order-after-placed', onOrderAfterPlaced);
+      await root.$store.dispatch('braintree/createBraintreeClient');
     });
 
     onBeforeUnmount(() => {

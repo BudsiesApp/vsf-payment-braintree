@@ -1,11 +1,13 @@
+import { ActionTree } from 'vuex';
 import client, { Client } from 'braintree-web/dist/browser/client';
 import config from 'config'
 import { adjustMultistoreApiUrl } from '@vue-storefront/core/lib/multistore'
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 
 import { BraintreeState } from '../types/BraintreeState'
-import { ActionTree } from 'vuex';
 import { BEFORE_STORE_BACKEND_API_REQUEST } from 'src/modules/shared';
+import { SET_BRAINTREE_CLIENT, SET_BRAINTREE_CLIENT_EXPIRATION_DATE } from './mutation-types';
+import { BRAINTREE_CLIENT_EXPIRATION_TIMEOUT } from '../types/braintree-client-expiration-timeout';
 
 // it's a good practice for all actions to return Promises with effect of their execution
 export const actions: ActionTree<BraintreeState, any> = {
@@ -82,11 +84,22 @@ export const actions: ActionTree<BraintreeState, any> = {
 
     return fetch(url, payload).then(resp => { return resp.json() })
   },
-  async createBraintreeClient ({ dispatch }): Promise<Client> {
+  async createBraintreeClient ({ state, commit, dispatch }): Promise<Client> {
+    const date = Date.now()
+    if (state.braintreeClient && state.expirationDate && date < state.expirationDate) {
+      return state.braintreeClient;
+    }
+
+    commit(SET_BRAINTREE_CLIENT, undefined);
+    commit(SET_BRAINTREE_CLIENT_EXPIRATION_DATE, undefined);
+
     const token = await dispatch('generateToken');
     const braintreeClient = await client.create({
       authorization: token
     });
+
+    commit(SET_BRAINTREE_CLIENT, braintreeClient);
+    commit(SET_BRAINTREE_CLIENT_EXPIRATION_DATE, date + BRAINTREE_CLIENT_EXPIRATION_TIMEOUT);
 
     return braintreeClient;
   }
