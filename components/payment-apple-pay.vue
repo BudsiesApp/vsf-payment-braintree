@@ -28,7 +28,7 @@ import { AdditionalAddressData, ExpressCheckoutAuthorizedCallbackData, MainAddre
 
 let ApplePaySession: any;
 
-Vue.config.ignoredElements = ['apple-pay-button'];
+Vue.config.ignoredElements = [...(Vue.config.ignoredElements || []), 'apple-pay-button'];
 
 export default PaymentMethod.extend({
   name: 'PaymentApplePay',
@@ -205,7 +205,7 @@ export default PaymentMethod.extend({
             throw new Error('onExpressCheckoutAuthorized is missing');
           }
 
-          const shippingContact = event.payment && event.payment.shippingContact ? event.payment.shippingContact : {};
+          const shippingContact = event.payment?.shippingContact || {};
 
           const firstName: string = shippingContact.givenName || '';
           const lastName: string = shippingContact.familyName || '';

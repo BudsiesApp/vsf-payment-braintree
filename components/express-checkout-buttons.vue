@@ -50,7 +50,7 @@ export default defineComponent({
     PaymentPayPal,
     PaymentGooglePay
   },
-  setup (props, context) {
+  setup (_, context) {
     const root = context.root;
     const windowObj = inject<Window & typeof window | undefined>('WindowObject', undefined);
     const isPlacing = ref(false);
@@ -107,8 +107,8 @@ export default defineComponent({
     });
 
     onBeforeUnmount(() => {
-      EventBus.$off('order-after-placed', onOrderAfterPlaced);
       EventBus.$off(PAYMENT_ERROR_EVENT, onPaymentErrorEventHandler);
+      EventBus.$off('order-after-placed', onOrderAfterPlaced);
     });
 
     const totals = computed<number>(() => {
