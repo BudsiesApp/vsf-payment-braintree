@@ -22,7 +22,6 @@ import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
 import { PAYMENT_ERROR_EVENT, getRegionIdByCountryAndStateCode } from 'src/modules/shared';
 
-import { PaymentType } from '../types/payment-type';
 import supportedMethodsCodes from '../types/SupportedMethodsCodes';
 import { AdditionalAddressData, ExpressCheckoutAuthorizedCallbackData, MainAddressData, ShippingDetailsChangedCallbackData } from '../types/express-checkout-data.interface';
 
@@ -198,7 +197,7 @@ export default PaymentMethod.extend({
       }
 
       try {
-        if (this.type === PaymentType.EXPRESS_CHECKOUT) {
+        if (this.isExpressCheckout) {
           if (!this.onExpressCheckoutAuthorized) {
             throw new Error('onExpressCheckoutAuthorized is missing');
           }

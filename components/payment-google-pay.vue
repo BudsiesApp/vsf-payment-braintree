@@ -15,7 +15,6 @@ import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus';
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
 import { getRegionIdByCountryAndStateCode, PAYMENT_ERROR_EVENT } from 'src/modules/shared';
-import { PaymentType } from '../types/payment-type';
 import { AdditionalAddressData, ExpressCheckoutAuthorizedCallbackData, MainAddressData, ShippingDetailsChangedCallbackData } from '../types/express-checkout-data.interface';
 import supportedMethodsCodes from '../types/SupportedMethodsCodes';
 
@@ -38,144 +37,21 @@ function getErrorObject (errorMessage: string): google.payments.api.PaymentAutho
 export default PaymentMethod.extend({
   name: 'PaymentGooglePay',
   data () {
+    const expressCheckoutPaymentRequestData: Partial<google.payments.api.PaymentDataRequest> = {
+      emailRequired: true,
+      shippingAddressRequired: true,
+      shippingAddressParameters: {
+        phoneNumberRequired: true
+      } as any,
+      shippingOptionRequired: true,
+      callbackIntents: ['SHIPPING_ADDRESS', 'SHIPPING_OPTION', 'PAYMENT_AUTHORIZATION']
+    };
+
     return {
       googlePayClient: undefined as undefined | any,
       googlePayCheckoutInstance: undefined as undefined | GooglePayment,
-      isGooglePayAvailable: false
-    }
-  },
-  computed: {
-    expressCheckoutPaymentRequestData (): Partial<google.payments.api.PaymentDataRequest> {
-      return {
-        emailRequired: true,
-        shippingAddressRequired: true,
-        shippingAddressParameters: {
-          phoneNumberRequired: true
-        } as any,
-        shippingOptionRequired: true,
-        callbackIntents: ['SHIPPING_ADDRESS', 'SHIPPING_OPTION', 'PAYMENT_AUTHORIZATION']
-      };
-    },
-    expressCheckoutPaymentOptions (): Partial<google.payments.api.PaymentOptions> {
-      return {
-        paymentDataCallbacks: {
-          onPaymentAuthorized: async (paymentData) => {
-            if (!paymentData.shippingAddress) {
-              return Promise.resolve(getErrorObject('Please, provide shipping address'));
-            }
-
-            if (!paymentData.shippingAddress.name) {
-              return Promise.resolve(getErrorObject('Please, provide recepient name'));
-            }
-
-            if (!paymentData.email) {
-              return Promise.resolve(getErrorObject('Please, provide e-mail address'));
-            }
-
-            const [firstName, lastName] = paymentData.shippingAddress.name.split(' ');
-
-            const customer: ExpressCheckoutAuthorizedCallbackData['customer'] = {
-              emailAddress: paymentData.email,
-              firstName,
-              lastName
-            };
-
-            const shippingAddress = paymentData.shippingAddress;
-
-            const additionalAddressData: AdditionalAddressData = {
-              firstName,
-              lastName,
-              streetAddress: shippingAddress.address1 || '',
-              phoneNumber: shippingAddress.phoneNumber || ''
-            };
-
-            if (!this.onExpressCheckoutAuthorized) {
-              throw new Error('onExpressCheckoutAuthorized is missing');
-            }
-
-            await this.onExpressCheckoutAuthorized({
-              paymentMethod: supportedMethodsCodes.GOOGLE_PAY,
-              customer,
-              shippingDetails: additionalAddressData,
-              paymentDetails: additionalAddressData
-            });
-
-            return Promise.resolve(
-              {
-                transactionState: 'SUCCESS'
-              }
-            );
-          },
-          onPaymentDataChanged: async (intermediatePaymentData) => {
-            const shippingOptionId = intermediatePaymentData.shippingOptionData?.id;
-
-            const shippingAddress = intermediatePaymentData.shippingAddress;
-
-            if (!shippingAddress) {
-              return Promise.resolve({});
-            }
-
-            const regionId = getRegionIdByCountryAndStateCode(
-              shippingAddress.countryCode,
-              shippingAddress.administrativeArea
-            );
-
-            const state = regionId === null ? shippingAddress.administrativeArea : '';
-
-            const addressData: MainAddressData = {
-              country: shippingAddress.countryCode,
-              city: shippingAddress.locality,
-              state,
-              region_id: regionId,
-              zipCode: shippingAddress.postalCode
-            };
-
-            const shippingDetails: ShippingDetailsChangedCallbackData = {
-              shippingAddress: addressData,
-              paymentAddress: addressData,
-              shippingMethod: shippingOptionId && shippingOptionId !== 'shipping_option_unselected' ? shippingOptionId : ''
-            };
-
-            if (!this.onShippingDetailsChanged) {
-              return Promise.resolve({});
-            }
-
-            const result = await this.onShippingDetailsChanged(
-              shippingDetails
-            );
-            const convertedShippingOptions: google.payments.api.SelectionOption[] = [];
-
-            for (const item of result.availableShippingMethods) {
-              if (!item.method_code || !item.method_title) {
-                continue;
-              }
-
-              const price = item.price_incl_tax?.toString();
-              convertedShippingOptions.push({
-                id: item.method_code,
-                label: item.method_title,
-                description: price ? `$${price}` : ''
-              });
-            }
-
-            return new Promise((resolve) => {
-              resolve(
-                {
-                  newTransactionInfo: {
-                    totalPriceStatus: 'FINAL',
-                    totalPrice: result.total.final.toString(),
-                    currencyCode: 'USD'
-                  },
-                  newShippingOptionParameters: {
-                    shippingOptions: convertedShippingOptions,
-                    defaultSelectedOptionId: result.selectedShippingMethod
-                  }
-                }
-              )
-            });
-          }
-        }
-      }
+      isGooglePayAvailable: false,
+      expressCheckoutPaymentRequestData
     }
   },
   async created (): Promise<void> {
@@ -186,10 +62,116 @@ export default PaymentMethod.extend({
     this.createGooglePayCheckoutInstance(this.braintreeClient);
   },
   methods: {
+    async onPaymentAuthorized (paymentData: any): Promise<google.payments.api.PaymentAuthorizationResult> {
+      if (!paymentData.shippingAddress) {
+        return Promise.resolve(getErrorObject('Please, provide shipping address'));
+      }
+
+      if (!paymentData.shippingAddress.name) {
+        return Promise.resolve(getErrorObject('Please, provide recepient name'));
+      }
+
+      if (!paymentData.email) {
+        return Promise.resolve(getErrorObject('Please, provide e-mail address'));
+      }
+
+      const [firstName, lastName] = paymentData.shippingAddress.name.split(' ');
+
+      const customer: ExpressCheckoutAuthorizedCallbackData['customer'] = {
+        emailAddress: paymentData.email,
+        firstName,
+        lastName
+      };
+
+      const shippingAddress = paymentData.shippingAddress;
+
+      const additionalAddressData: AdditionalAddressData = {
+        firstName,
+        lastName,
+        streetAddress: shippingAddress.address1 || '',
+        phoneNumber: shippingAddress.phoneNumber || ''
+      };
+
+      if (!this.onExpressCheckoutAuthorized) {
+        throw new Error('onExpressCheckoutAuthorized is missing');
+      }
+
+      await this.onExpressCheckoutAuthorized({
+        paymentMethod: supportedMethodsCodes.GOOGLE_PAY,
+        customer,
+        shippingDetails: additionalAddressData,
+        paymentDetails: additionalAddressData
+      });
+
+      return Promise.resolve({ transactionState: 'SUCCESS' });
+    },
+    async onPaymentDataChanged (intermediatePaymentData: any): Promise<any> {
+      const shippingOptionId = intermediatePaymentData.shippingOptionData?.id;
+
+      const shippingAddress = intermediatePaymentData.shippingAddress;
+
+      if (!shippingAddress) {
+        return Promise.resolve({});
+      }
+
+      const regionId = getRegionIdByCountryAndStateCode(
+        shippingAddress.countryCode,
+        shippingAddress.administrativeArea
+      );
+
+      const state = regionId === null ? shippingAddress.administrativeArea : '';
+
+      const addressData: MainAddressData = {
+        country: shippingAddress.countryCode,
+        city: shippingAddress.locality,
+        state,
+        region_id: regionId,
+        zipCode: shippingAddress.postalCode
+      };
+
+      const shippingDetails: ShippingDetailsChangedCallbackData = {
+        shippingAddress: addressData,
+        paymentAddress: addressData,
+        shippingMethod: shippingOptionId && shippingOptionId !== 'shipping_option_unselected' ? shippingOptionId : ''
+      };
+
+      if (!this.onShippingDetailsChanged) {
+        return Promise.resolve({});
+      }
+
+      const result = await this.onShippingDetailsChanged(shippingDetails);
+      const convertedShippingOptions: google.payments.api.SelectionOption[] = [];
+
+      for (const item of result.availableShippingMethods) {
+        if (!item.method_code || !item.method_title) {
+          continue;
+        }
+
+        const price = item.price_incl_tax?.toString();
+        convertedShippingOptions.push({
+          id: item.method_code,
+          label: item.method_title,
+          description: price ? `$${price}` : ''
+        });
+      }
+
+      return Promise.resolve({
+        newTransactionInfo: {
+          totalPriceStatus: 'FINAL',
+          totalPrice: result.total.final.toString(),
+          currencyCode: 'USD'
+        },
+        newShippingOptionParameters: {
+          shippingOptions: convertedShippingOptions,
+          defaultSelectedOptionId: result.selectedShippingMethod
+        }
+      });
+    },
     async createExpressCheckoutButton (): Promise<void> {
-      if (!this.googlePayClient || this.type !== PaymentType.EXPRESS_CHECKOUT || !this.isGooglePayAvailable) {
+      if (!this.googlePayClient || !this.isExpressCheckout || !this.isGooglePayAvailable) {
         return;
       }
+
       const doPayment = this.doPayment.bind(this);
 
       const button = this.googlePayClient.createButton({
@@ -233,10 +215,13 @@ export default PaymentMethod.extend({
 
       let options: google.payments.api.PaymentOptions = { environment };
 
-      if (this.type === PaymentType.EXPRESS_CHECKOUT) {
+      if (this.isExpressCheckout) {
         options = {
           environment,
-          paymentDataCallbacks: this.expressCheckoutPaymentOptions.paymentDataCallbacks
+          paymentDataCallbacks: {
+            onPaymentAuthorized: this.onPaymentAuthorized,
+            onPaymentDataChanged: this.onPaymentDataChanged
+          }
         }
       }
 
@@ -279,7 +264,7 @@ export default PaymentMethod.extend({
           }
         });
 
-        if (this.type === PaymentType.EXPRESS_CHECKOUT) {
+        if (this.isExpressCheckout) {
           paymentRequest = { ...paymentRequest, ...this.expressCheckoutPaymentRequestData };
         }
 

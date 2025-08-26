@@ -12,7 +12,7 @@
 
 <script lang="ts">
 import { PayPalCheckoutCreatePaymentOptions } from 'braintree-web';
-import paypalCheckout, { PayPalCheckout, PayPalCheckoutTokenizationOptions, ShippingOptionType } from 'braintree-web/dist/browser/paypal-checkout';
+import paypalCheckout, { PayPalCheckoutTokenizationOptions, ShippingOptionType } from 'braintree-web/dist/browser/paypal-checkout';
 
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
@@ -21,7 +21,6 @@ import { getRegionIdByCountryAndStateCode, PAYMENT_ERROR_EVENT } from 'src/modul
 
 import { AdditionalAddressData, MainAddressData } from '../types/express-checkout-data.interface';
 import supportedMethodsCodes from '../types/SupportedMethodsCodes';
-import { PaymentType } from '../types/payment-type';
 
 enum FlowType {
   Vault = 'vault',
@@ -75,90 +74,19 @@ export default PaymentMethod.extend({
           intent: 'capture'
         });
 
-        await this.onPayPalSdkLoaded(this.paypalCheckoutInstance);
+        await this.onPayPalSdkLoaded();
       } catch (error) {
         EventBus.$emit(PAYMENT_ERROR_EVENT);
       }
     },
-    async onPayPalSdkLoaded (paypalCheckoutInstance: PayPalCheckout): Promise<void> {
+    async onPayPalSdkLoaded (): Promise<void> {
       const paypal = (this.window as any).paypal;
       if (!paypal) {
         return;
       }
 
       const buttons = await paypal.Buttons({
-        onShippingChange: async (data, actions) => {
-          if (this.type !== PaymentType.EXPRESS_CHECKOUT) {
-            return actions.resolve();
-          }
-
-          const shippingOption = data.selected_shipping_option;
-
-          const regionId = getRegionIdByCountryAndStateCode(
-            data.shipping_address.country_code,
-            data.shipping_address.state
-          );
-
-          const state = regionId === null ? data.shipping_address.state : '';
-
-          const shippingAddressData: MainAddressData = {
-            country: data.shipping_address.country_code,
-            state,
-            city: data.shipping_address.city,
-            region_id: regionId,
-            zipCode: data.shipping_address.postal_code
-          }
-
-          const result = await this.onShippingDetailsChanged({
-            shippingMethod: shippingOption,
-            shippingAddress: shippingAddressData,
-            paymentAddress: shippingAddressData
-          });
-
-          const convertedShippingOptions: {
-            id: string,
-            type: 'SHIPPING',
-            label: string,
-            selected: boolean,
-            amount: { currency_code: 'USD', value: string }
-          }[] = [];
-
-          for (const method of result.availableShippingMethods) {
-            if (!method.method_code || !method.carrier_code || method.price_incl_tax === undefined) {
-              continue;
-            }
-
-            convertedShippingOptions.push({
-              id: method.method_code,
-              type: 'SHIPPING',
-              label: method.method_title?.toString() || method.method_code,
-              selected: method.method_code === result.selectedShippingMethod,
-              amount: {
-                currency_code: 'USD',
-                value: method.price_incl_tax.toString()
-              }
-            });
-          }
-
-          await actions.order.patch(
-            [
-              {
-                op: 'replace',
-                path: "/purchase_units/@reference_id=='default'/amount",
-                value: {
-                  currency_code: 'USD',
-                  value: result.total.final
-                }
-              },
-              {
-                op: 'replace',
-                path: "/purchase_units/@reference_id=='default'/shipping/options",
-                value: convertedShippingOptions
-              }
-            ]
-          );
-          actions.resolve()
-        },
+        onShippingChange: this.onPayPalShippingChange,
         fundingSource: paypal.FUNDING.PAYPAL,
         style: {
           label: this.isExpressCheckout ? 'checkout' : 'pay',
@@ -166,95 +94,182 @@ export default PaymentMethod.extend({
           height: 40,
           disableMaxWidth: true
         },
-        createOrder: () => {
-          const paymentData: PayPalCheckoutCreatePaymentOptions = {
-            flow: FlowType.Checkout,
-            amount: this.total,
-            currency: this.currency,
-            intent: Intent.Capture
-          };
-
-          if (this.type === PaymentType.EXPRESS_CHECKOUT) {
-            const convertedShippingOptions: {
-              id: string,
-              type: ShippingOptionType,
-              label: string,
-              selected: boolean,
-              amount: { currency: 'USD', value: string }
-            }[] = [];
-
-            for (const method of this.$store.getters['checkout/getShippingMethods']) {
-              if (!method.method_code || !method.carrier_code || method.price_incl_tax === undefined) {
-                continue;
-              }
-
-              convertedShippingOptions.push({
-                id: method.method_code,
-                type: 'SHIPPING' as ShippingOptionType,
-                label: method.method_title?.toString() || method.method_code,
-                selected: true,
-                amount: {
-                  currency: 'USD',
-                  value: method.price_incl_tax.toString()
-                }
-              });
-            }
-
-            paymentData.enableShippingAddress = true;
-            paymentData.shippingOptions = convertedShippingOptions;
-          }
-
-          return paypalCheckoutInstance.createPayment(paymentData);
-        },
-        onApprove: async (data: PayPalCheckoutTokenizationOptions, actions: any) => {
-          if (this.type === PaymentType.EXPRESS_CHECKOUT) {
-            const orderData = await actions.order.get();
-
-            const purchaseUnitData = orderData.purchase_units[0];
-            const [shippingFirstName, shippingLastName] = purchaseUnitData.shipping.name.full_name.split(' ');
-            const shippingAddressData = purchaseUnitData.shipping.address;
-
-            const addressData: AdditionalAddressData = {
-              firstName: shippingFirstName,
-              lastName: shippingLastName,
-              streetAddress: shippingAddressData.address_line_1
-            }
-
-            if (!this.onExpressCheckoutAuthorized) {
-              throw new Error('onExpressCheckoutAuthorized is not defined');
-            }
-
-            await this.onExpressCheckoutAuthorized(
-              {
-                paymentMethod: supportedMethodsCodes.PAY_PAL,
-                customer: {
-                  firstName: orderData.payer.name.given_name,
-                  lastName: orderData.payer.name.surname,
-                  emailAddress: orderData.payer.email_address
-                },
-                shippingDetails: addressData,
-                paymentDetails: addressData
-              }
-            );
-          }
-
-          return paypalCheckoutInstance.tokenizePayment(data, (error, payload) => {
-            if (error) {
-              EventBus.$emit(PAYMENT_ERROR_EVENT);
-              return;
-            }
-
-            this.$store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_METHOD_NONCE}`, payload.nonce);
-
-            this.$emit('success');
-          })
-        },
-        onError: (_error: string) => {
-          EventBus.$emit(PAYMENT_ERROR_EVENT);
-        }
+        createOrder: this.onPayPalCreateOrder,
+        onApprove: this.onPayPalApprove,
+        onError: this.onPayPalError
       });
 
       buttons.render('#pay-pal-button-container');
+    },
+    async onPayPalShippingChange (data: any, actions: any) {
+      if (!this.isExpressCheckout) {
+        return actions.resolve();
+      }
+
+      if (!this.onShippingDetailsChanged) {
+        throw new Error('onShippingDetailsChanged is not defined')
+      }
+
+      const shippingOption = data.selected_shipping_option;
+
+      const regionId = getRegionIdByCountryAndStateCode(
+        data.shipping_address.country_code,
+        data.shipping_address.state
+      );
+
+      const state = regionId === null ? data.shipping_address.state : '';
+
+      const shippingAddressData: MainAddressData = {
+        country: data.shipping_address.country_code,
+        state,
+        city: data.shipping_address.city,
+        region_id: regionId,
+        zipCode: data.shipping_address.postal_code
+      }
+
+      const result = await this.onShippingDetailsChanged({
+        shippingMethod: shippingOption,
+        shippingAddress: shippingAddressData,
+        paymentAddress: shippingAddressData
+      });
+
+      const convertedShippingOptions: {
+        id: string,
+        type: 'SHIPPING',
+        label: string,
+        selected: boolean,
+        amount: { currency_code: 'USD', value: string }
+      }[] = [];
+
+      for (const method of result.availableShippingMethods) {
+        if (!method.method_code || !method.carrier_code || method.price_incl_tax === undefined) {
+          continue;
+        }
+
+        convertedShippingOptions.push({
+          id: method.method_code,
+          type: 'SHIPPING',
+          label: method.method_title?.toString() || method.method_code,
+          selected: method.method_code === result.selectedShippingMethod,
+          amount: {
+            currency_code: 'USD',
+            value: method.price_incl_tax.toString()
+          }
+        });
+      }
+
+      await actions.order.patch(
+        [
+          {
+            op: 'replace',
+            path: "/purchase_units/@reference_id=='default'/amount",
+            value: {
+              currency_code: 'USD',
+              value: result.total.final
+            }
+          },
+          {
+            op: 'replace',
+            path: "/purchase_units/@reference_id=='default'/shipping/options",
+            value: convertedShippingOptions
+          }
+        ]
+      );
+      return actions.resolve();
+    },
+    onPayPalCreateOrder (): Promise<string> {
+      if (!this.paypalCheckoutInstance) {
+        throw new Error('paypalCheckoutInstance is not defined')
+      }
+
+      const paymentData: PayPalCheckoutCreatePaymentOptions = {
+        flow: FlowType.Checkout,
+        amount: this.total,
+        currency: this.currency,
+        intent: Intent.Capture
+      };
+
+      if (this.isExpressCheckout) {
+        const convertedShippingOptions: {
+          id: string,
+          type: ShippingOptionType,
+          label: string,
+          selected: boolean,
+          amount: { currency: 'USD', value: string }
+        }[] = [];
+
+        for (const method of this.$store.getters['checkout/getShippingMethods']) {
+          if (!method.method_code || !method.carrier_code || method.price_incl_tax === undefined) {
+            continue;
+          }
+
+          convertedShippingOptions.push({
+            id: method.method_code,
+            type: 'SHIPPING' as ShippingOptionType,
+            label: method.method_title?.toString() || method.method_code,
+            selected: true,
+            amount: {
+              currency: 'USD',
+              value: method.price_incl_tax.toString()
+            }
+          });
+        }
+
+        paymentData.enableShippingAddress = true;
+        paymentData.shippingOptions = convertedShippingOptions;
+      }
+
+      return this.paypalCheckoutInstance.createPayment(paymentData);
+    },
+    async onPayPalApprove (data: PayPalCheckoutTokenizationOptions, actions: any): Promise<void> {
+      if (!this.paypalCheckoutInstance) {
+        throw new Error('paypalCheckoutInstance is not defined')
+      }
+
+      if (this.isExpressCheckout) {
+        const orderData = await actions.order.get();
+
+        const purchaseUnitData = orderData.purchase_units[0];
+        const [shippingFirstName, shippingLastName] = purchaseUnitData.shipping.name.full_name.split(' ');
+        const shippingAddressData = purchaseUnitData.shipping.address;
+
+        const addressData: AdditionalAddressData = {
+          firstName: shippingFirstName,
+          lastName: shippingLastName,
+          streetAddress: shippingAddressData.address_line_1
+        }
+
+        if (!this.onExpressCheckoutAuthorized) {
+          throw new Error('onExpressCheckoutAuthorized is not defined');
+        }
+
+        await this.onExpressCheckoutAuthorized(
+          {
+            paymentMethod: supportedMethodsCodes.PAY_PAL,
+            customer: {
+              firstName: orderData.payer.name.given_name,
+              lastName: orderData.payer.name.surname,
+              emailAddress: orderData.payer.email_address
+            },
+            shippingDetails: addressData,
+            paymentDetails: addressData
+          }
+        );
+      }
+
+      return this.paypalCheckoutInstance.tokenizePayment(data, (error: any, payload: any) => {
+        if (error) {
+          EventBus.$emit(PAYMENT_ERROR_EVENT);
+          return;
+        }
+
+        this.$store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_METHOD_NONCE}`, payload.nonce);
+
+        this.$emit('success');
+      })
+    },
+    onPayPalError (): void {
+      EventBus.$emit(PAYMENT_ERROR_EVENT);
     }
   },
   watch: {
