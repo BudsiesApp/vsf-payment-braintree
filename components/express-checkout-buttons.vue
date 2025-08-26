@@ -133,8 +133,14 @@ export default defineComponent({
     }
 
     async function onShippingDetailsChanged (data: ShippingDetailsChangedCallbackData): Promise<ExpressCheckoutUpdateData> {
-      root.$store.commit(CHECKOUT_UPDATE_SHIPPING_DETAILS_MUTATION, data.shippingAddress);
-      root.$store.commit(CHECKOUT_UPDATE_PAYMENT_DETAILS_MUTATION, data.paymentAddress);
+      if (data.shippingAddress) {
+        root.$store.commit(CHECKOUT_UPDATE_SHIPPING_DETAILS_MUTATION, data.shippingAddress);
+      }
+
+      if (data.paymentAddress) {
+        root.$store.commit(CHECKOUT_UPDATE_PAYMENT_DETAILS_MUTATION, data.paymentAddress);
+      }
+
       await root.$store.dispatch('cart/syncShippingMethods', { forceServerSync: true });
 
       let selectedShippingMethod = shippingMethods.value.find((method) => method.method_code === data.shippingMethod) || shippingMethods.value[0];

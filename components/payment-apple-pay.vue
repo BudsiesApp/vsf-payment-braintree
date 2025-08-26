@@ -89,7 +89,7 @@ export default PaymentMethod.extend({
           'postalAddress',
           'name',
           'phone',
-          'email'
+          'email',
         ];
       }
 
@@ -151,15 +151,7 @@ export default PaymentMethod.extend({
 
           const methodId: string = event.shippingMethod && event.shippingMethod.identifier ? event.shippingMethod.identifier : '';
 
-          const shippingContact = (event.shippingContact || {}) as any;
-          const billingContact = event.billingContact || event.payment?.billingContact || null;
-
-          const shippingAddress = this.prepareAddressDataFromAppleContact(shippingContact);
-          const paymentAddress = billingContact ? this.prepareAddressDataFromAppleContact(billingContact) : shippingAddress;
-
           const shippingDetails: ShippingDetailsChangedCallbackData = {
-            shippingAddress: shippingAddress,
-            paymentAddress: paymentAddress,
             shippingMethod: methodId
           };
 

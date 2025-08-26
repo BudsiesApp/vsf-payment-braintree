@@ -17,9 +17,9 @@ export interface AdditionalAddressData {
 }
 
 export interface ShippingDetailsChangedCallbackData {
-  shippingAddress: MainAddressData,
-  paymentAddress: MainAddressData,
-  shippingMethod: string
+  shippingAddress?: MainAddressData,
+  paymentAddress?: MainAddressData,
+  shippingMethod?: string
 }
 
 export interface ExpressCheckoutAuthorizedCallbackData {
