@@ -31,6 +31,8 @@ let ApplePaySession: any;
 
 Vue.config.ignoredElements = [...(Vue.config.ignoredElements || []), 'apple-pay-button'];
 
+const applePaySource = 'https://applepay.cdn-apple.com/jsapi/1.latest/apple-pay-sdk.js';
+
 export default PaymentMethod.extend({
   name: 'PaymentApplePay',
   data () {
@@ -41,7 +43,7 @@ export default PaymentMethod.extend({
   async created (): Promise<void> {
     if (!ApplePaySession) {
       await loadScript({
-        src: 'https://applepay.cdn-apple.com/jsapi/1.latest/apple-pay-sdk.js',
+        src: applePaySource,
       });
     }
 
