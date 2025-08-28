@@ -8,7 +8,7 @@
 
 <script lang="ts">
 import googlePayment, { GooglePayment } from 'braintree-web/dist/browser/google-payment';
-import loadScript from '@braintree/asset-loader/load-script';
+import { loadScript } from '@braintree/asset-loader';
 
 import config from 'config';
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus';
@@ -48,7 +48,7 @@ export default PaymentMethod.extend({
     };
 
     return {
-      googlePayClient: undefined as undefined | any,
+      googlePayClient: undefined as undefined | google.payments.api.PaymentsClient,
       googlePayCheckoutInstance: undefined as undefined | GooglePayment,
       isGooglePayAvailable: false,
       expressCheckoutPaymentRequestData
@@ -203,12 +203,10 @@ export default PaymentMethod.extend({
         src: googlePaySource
       });
 
-      const google = (this.window as any).google;
-
       const environment = this.getEnvironment();
       const merchantId = config.braintree.googlePay.merchantId;
 
-      if (environment !== 'TEST' && !merchantId) {
+      if ((environment !== 'TEST' && !merchantId) || !this.window.google) {
         this.isGooglePayAvailable = false;
         return;
       }
@@ -225,7 +223,7 @@ export default PaymentMethod.extend({
         }
       }
 
-      this.googlePayClient = new google.payments.api.PaymentsClient(options);
+      this.googlePayClient = new this.window.google.payments.api.PaymentsClient(options);
 
       if (this.googlePayCheckoutInstance) {
         return;
@@ -238,10 +236,12 @@ export default PaymentMethod.extend({
           googleMerchantId: merchantId
         });
 
+        const paymentDataRequest = await this.googlePayCheckoutInstance.createPaymentDataRequest();
+
         const isReadyToPay = await this.googlePayClient.isReadyToPay({
           apiVersion: 2,
           apiVersionMinor: 0,
-          allowedPaymentMethods: this.googlePayCheckoutInstance.createPaymentDataRequest().allowedPaymentMethods
+          allowedPaymentMethods: paymentDataRequest.allowedPaymentMethods
         });
 
         this.isGooglePayAvailable = isReadyToPay.result;
@@ -253,6 +253,10 @@ export default PaymentMethod.extend({
     async doPayment () {
       if (!this.googlePayCheckoutInstance) {
         throw new Error('GooglePay instance is undefined');
+      }
+
+      if (!this.googlePayClient) {
+        throw new Error('GooglePay client is undefined');
       }
 
       try {
@@ -271,8 +275,6 @@ export default PaymentMethod.extend({
         var paymentData = await this.googlePayClient.loadPaymentData(paymentRequest);
 
         var tokenizePayload = await this.googlePayCheckoutInstance.parseResponse(paymentData);
-
-        tokenizePayload.rawPaymentData = paymentData
 
         this.$store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_METHOD_NONCE}`, tokenizePayload.nonce);
 
