@@ -106,6 +106,10 @@ export default PaymentMethod.extend({
         return actions.resolve();
       }
 
+      if (!this.paypalCheckoutInstance) {
+        throw new Error('paypalCheckoutInstance is not defined');
+      }
+
       if (!this.onShippingDetailsChanged) {
         throw new Error('onShippingDetailsChanged is not defined')
       }
@@ -133,13 +137,7 @@ export default PaymentMethod.extend({
         paymentAddress: shippingAddressData
       });
 
-      const convertedShippingOptions: {
-        id: string,
-        type: 'SHIPPING',
-        label: string,
-        selected: boolean,
-        amount: { currency_code: 'USD', value: string }
-      }[] = [];
+      const convertedShippingOptions: paypal.ShippingOption[] = [];
 
       for (const method of result.availableShippingMethods) {
         if (!method.method_code || !method.carrier_code || method.price_incl_tax === undefined) {
@@ -148,34 +146,22 @@ export default PaymentMethod.extend({
 
         convertedShippingOptions.push({
           id: method.method_code,
-          type: 'SHIPPING',
+          type: 'SHIPPING' as ShippingOptionType,
           label: method.method_title?.toString() || method.method_code,
           selected: method.method_code === result.selectedShippingMethod,
           amount: {
-            currency_code: 'USD',
+            currency: 'USD',
             value: method.price_incl_tax.toString()
           }
         });
       }
 
-      await actions.order.patch(
-        [
-          {
-            op: 'replace',
-            path: "/purchase_units/@reference_id=='default'/amount",
-            value: {
-              currency_code: 'USD',
-              value: result.total.final
-            }
-          },
-          {
-            op: 'replace',
-            path: "/purchase_units/@reference_id=='default'/shipping/options",
-            value: convertedShippingOptions
-          }
-        ]
-      );
-      return actions.resolve();
+      return this.paypalCheckoutInstance.updatePayment({
+        paymentId: data.paymentId,
+        amount: result.total.final.toString(),
+        currency: 'USD',
+        shippingOptions: convertedShippingOptions
+      });
     },
     onPayPalCreateOrder (): Promise<string> {
       if (!this.paypalCheckoutInstance) {
@@ -190,83 +176,65 @@ export default PaymentMethod.extend({
       };
 
       if (this.isExpressCheckout) {
-        const convertedShippingOptions: {
-          id: string,
-          type: ShippingOptionType,
-          label: string,
-          selected: boolean,
-          amount: { currency: 'USD', value: string }
-        }[] = [];
-
-        for (const method of this.$store.getters['checkout/getShippingMethods']) {
-          if (!method.method_code || !method.carrier_code || method.price_incl_tax === undefined) {
-            continue;
-          }
-
-          convertedShippingOptions.push({
-            id: method.method_code,
-            type: 'SHIPPING' as ShippingOptionType,
-            label: method.method_title?.toString() || method.method_code,
-            selected: true,
-            amount: {
-              currency: 'USD',
-              value: method.price_incl_tax.toString()
-            }
-          });
-        }
-
         paymentData.enableShippingAddress = true;
-        paymentData.shippingOptions = convertedShippingOptions;
+        paymentData.shippingOptions = [];
       }
 
       return this.paypalCheckoutInstance.createPayment(paymentData);
     },
-    async onPayPalApprove (data: PayPalCheckoutTokenizationOptions, actions: any): Promise<void> {
+    async onPayPalApprove (data: PayPalCheckoutTokenizationOptions): Promise<void> {
       if (!this.paypalCheckoutInstance) {
         throw new Error('paypalCheckoutInstance is not defined')
       }
 
-      if (this.isExpressCheckout) {
-        const orderData = await actions.order.get();
+      try {
+        const tokenizeResult = await this.paypalCheckoutInstance.tokenizePayment(data);
+        this.$store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_METHOD_NONCE}`, tokenizeResult.nonce);
 
-        const purchaseUnitData = orderData.purchase_units[0];
-        const [shippingFirstName, shippingLastName] = purchaseUnitData.shipping.name.full_name.split(' ');
-        const shippingAddressData = purchaseUnitData.shipping.address;
-
-        const addressData: AdditionalAddressData = {
-          firstName: shippingFirstName,
-          lastName: shippingLastName,
-          streetAddress: shippingAddressData.address_line_1
+        if (!this.isExpressCheckout) {
+          this.$emit('success');
+          return;
         }
 
         if (!this.onExpressCheckoutAuthorized) {
           throw new Error('onExpressCheckoutAuthorized is not defined');
         }
 
+        const details = tokenizeResult.details;
+
+        if (!details.shippingAddress) {
+          throw new Error('Shipping address is not specified');
+        }
+
+        if (!details.shippingAddress.recipientName) {
+          throw new Error('Recipient name is not specified');
+        }
+
+        const [shippingFirstName, shippingLastName] = details.shippingAddress.recipientName.split(' ');
+
+        const addressData: AdditionalAddressData = {
+          firstName: shippingFirstName,
+          lastName: shippingLastName,
+          streetAddress: details.shippingAddress?.line1 || ''
+        };
+
         await this.onExpressCheckoutAuthorized(
           {
             paymentMethod: supportedMethodsCodes.PAY_PAL,
             customer: {
-              firstName: orderData.payer.name.given_name,
-              lastName: orderData.payer.name.surname,
-              emailAddress: orderData.payer.email_address
+              firstName: details.firstName,
+              lastName: details.lastName,
+              emailAddress: details.email
             },
             shippingDetails: addressData,
             paymentDetails: addressData
           }
         );
-      }
-
-      return this.paypalCheckoutInstance.tokenizePayment(data, (error: any, payload: any) => {
-        if (error) {
-          EventBus.$emit(PAYMENT_ERROR_EVENT);
-          return;
-        }
-
-        this.$store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_METHOD_NONCE}`, payload.nonce);
 
         this.$emit('success');
-      })
+      } catch (error) {
+        EventBus.$emit(PAYMENT_ERROR_EVENT);
+      }
     },
     onPayPalError (): void {
       EventBus.$emit(PAYMENT_ERROR_EVENT);
