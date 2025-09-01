@@ -31,7 +31,7 @@ import { Client } from 'braintree-web';
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus';
 import { registerModule } from '@vue-storefront/core/lib/modules';
 import { OrderModule } from '@vue-storefront/core/modules/order';
-import { CHECKOUT_UPDATE_SHIPPING_DETAILS_MUTATION, CHECKOUT_UPDATE_PAYMENT_DETAILS_MUTATION, useOrderCreation, CHECKOUT_SET_THANKYOU_MUTATION, CHECKOUT_UPDATE_EXPRESS_CHECKOUT_DATA_MUTATION } from '@vue-storefront/core/modules/checkout';
+import { CHECKOUT_UPDATE_SHIPPING_DETAILS_MUTATION, CHECKOUT_UPDATE_PAYMENT_DETAILS_MUTATION, useOrderCreation, CHECKOUT_UPDATE_SUCCESS_ORDER_DATA_MUTATION } from '@vue-storefront/core/modules/checkout';
 import PaymentApplePay from 'src/modules/payment-braintree/components/payment-apple-pay.vue';
 import PaymentPayPal from 'src/modules/payment-braintree/components/payment-pay-pal.vue';
 import PaymentGooglePay from 'src/modules/payment-braintree/components/payment-google-pay.vue';
@@ -132,8 +132,7 @@ export default defineComponent({
     const braintreeClient = computed<Client>(() => root.$store.getters['braintree/braintreeClient']);
 
     function onOrderAfterPlaced (payload: any) {
-      root.$store.commit(CHECKOUT_UPDATE_EXPRESS_CHECKOUT_DATA_MUTATION, payload);
-      root.$store.commit(CHECKOUT_SET_THANKYOU_MUTATION, true);
+      root.$store.commit(CHECKOUT_UPDATE_SUCCESS_ORDER_DATA_MUTATION, payload);
       root.$router.push({ name: 'checkout', params: { success: 'success' } });
     }
 
