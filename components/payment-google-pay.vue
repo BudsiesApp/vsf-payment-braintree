@@ -299,7 +299,11 @@ export default (PaymentMethod as VueConstructor<InstanceType<typeof PaymentMetho
       }
     },
     isGooglePayAvailable: {
-      handler () {
+      handler (value) {
+        if (!value) {
+          return;
+        }
+
         this.createExpressCheckoutButton();
       }
     }

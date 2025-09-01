@@ -6,7 +6,7 @@ import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 
 import { BraintreeState } from '../types/BraintreeState'
 import { BEFORE_STORE_BACKEND_API_REQUEST } from 'src/modules/shared';
-import { SET_BRAINTREE_CLIENT, SET_BRAINTREE_CLIENT_EXPIRATION_DATE } from './mutation-types';
+import { SET_BRAINTREE_CLIENT, SET_BRAINTREE_CLIENT_CREATION_PROMISE, SET_BRAINTREE_CLIENT_EXPIRATION_DATE } from './mutation-types';
 import { BRAINTREE_CLIENT_EXPIRATION_TIMEOUT } from '../types/braintree-client-expiration-timeout';
 
 // it's a good practice for all actions to return Promises with effect of their execution
@@ -90,17 +90,31 @@ export const actions: ActionTree<BraintreeState, any> = {
       return state.braintreeClient;
     }
 
+    if (state.braintreeClientCreationPromise) {
+      return state.braintreeClientCreationPromise;
+    }
+
     commit(SET_BRAINTREE_CLIENT, undefined);
     commit(SET_BRAINTREE_CLIENT_EXPIRATION_DATE, undefined);
 
-    const token = await dispatch('generateToken');
-    const braintreeClient = await client.create({
-      authorization: token
-    });
+    const braintreeClientCreationPromise = async (): Promise<Client> => {
+      const token = await dispatch('generateToken');
+      const braintreeClient = await client.create({
+        authorization: token
+      });
 
-    commit(SET_BRAINTREE_CLIENT, braintreeClient);
-    commit(SET_BRAINTREE_CLIENT_EXPIRATION_DATE, date + BRAINTREE_CLIENT_EXPIRATION_TIMEOUT);
+      commit(SET_BRAINTREE_CLIENT, braintreeClient);
+      commit(SET_BRAINTREE_CLIENT_EXPIRATION_DATE, date + BRAINTREE_CLIENT_EXPIRATION_TIMEOUT);
 
-    return braintreeClient;
+      commit(SET_BRAINTREE_CLIENT_CREATION_PROMISE, undefined)
+
+      return braintreeClient;
+    };
+
+    const promise = braintreeClientCreationPromise()
+
+    commit(SET_BRAINTREE_CLIENT_CREATION_PROMISE, promise);
+
+    return promise;
   }
 }

@@ -132,7 +132,7 @@ export default PaymentMethod.extend({
       }
 
       const result = await this.onShippingDetailsChanged({
-        shippingMethod: shippingOption,
+        shippingMethod: shippingOption?.id,
         shippingAddress: shippingAddressData,
         paymentAddress: shippingAddressData
       });

@@ -6,5 +6,6 @@ export interface BraintreeState {
   trans: string[],
   paymentMethodNonce?: string,
   braintreeClient?: Client,
-  expirationDate?: number
+  expirationDate?: number,
+  braintreeClientCreationPromise?: Promise<Client>
 }
