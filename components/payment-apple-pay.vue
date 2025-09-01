@@ -16,6 +16,7 @@
 <script lang="ts">
 import Vue from 'vue';
 import config from 'config'
+import loadScript from '@braintree/asset-loader/dist/load-script';
 import applePay, { ApplePay } from 'braintree-web/dist/browser/apple-pay';
 
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
@@ -30,6 +31,8 @@ let ApplePaySession: any;
 
 Vue.config.ignoredElements = [...(Vue.config.ignoredElements || []), 'apple-pay-button'];
 
+const applePaySource = 'https://applepay.cdn-apple.com/jsapi/1.latest/apple-pay-sdk.js';
+
 export default PaymentMethod.extend({
   name: 'PaymentApplePay',
   data () {
@@ -38,6 +41,12 @@ export default PaymentMethod.extend({
     }
   },
   async created (): Promise<void> {
+    if (!ApplePaySession) {
+      await loadScript({
+        src: applePaySource,
+      });
+    }
+
     if (!this.isApplePayAvailable() || !this.braintreeClient) {
       return;
     }

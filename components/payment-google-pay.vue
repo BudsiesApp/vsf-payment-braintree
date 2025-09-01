@@ -8,7 +8,7 @@
 
 <script lang="ts">
 import googlePayment, { GooglePayment } from 'braintree-web/dist/browser/google-payment';
-import { loadScript } from '@braintree/asset-loader';
+import loadScript from '@braintree/asset-loader/dist/load-script';
 
 import config from 'config';
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus';
