@@ -31,7 +31,7 @@ import { Client } from 'braintree-web';
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus';
 import { registerModule } from '@vue-storefront/core/lib/modules';
 import { OrderModule } from '@vue-storefront/core/modules/order';
-import { CHECKOUT_UPDATE_SHIPPING_DETAILS_MUTATION, CHECKOUT_UPDATE_PAYMENT_DETAILS_MUTATION, useOrderCreation, CHECKOUT_SET_THANKYOU_MUTATION, CHECKOUT_UPDATE_EXPRESS_CHECKOUT_DATA_MUTATION } from '@vue-storefront/core/modules/checkout';
+import { CHECKOUT_UPDATE_SHIPPING_DETAILS_MUTATION, CHECKOUT_UPDATE_PAYMENT_DETAILS_MUTATION, useOrderCreation, CHECKOUT_UPDATE_SUCCESS_ORDER_DATA_MUTATION } from '@vue-storefront/core/modules/checkout';
 import PaymentApplePay from 'src/modules/payment-braintree/components/payment-apple-pay.vue';
 import PaymentPayPal from 'src/modules/payment-braintree/components/payment-pay-pal.vue';
 import PaymentGooglePay from 'src/modules/payment-braintree/components/payment-google-pay.vue';
@@ -40,8 +40,14 @@ import { PAYMENT_ERROR_EVENT } from 'src/modules/shared';
 import { PaymentType } from '../types/payment-type';
 import { SN_BRAINTREE, SET_PAYMENT_METHOD_NONCE } from '../store/mutation-types';
 import { ExpressCheckoutAuthorizedCallbackData, ExpressCheckoutUpdateData, ShippingDetailsChangedCallbackData } from '../types/express-checkout-data.interface';
+import supportedMethodsCodes from '../types/SupportedMethodsCodes';
 
 type Platform = 'ios' | 'mac' | 'android' | 'windows' | 'other';
+
+interface ExpressCheckoutMethod {
+  is: string,
+  key: supportedMethodsCodes
+};
 
 export default defineComponent({
   name: 'ExpressCheckoutButtons',
@@ -54,6 +60,38 @@ export default defineComponent({
     const root = context.root;
     const windowObj = inject<Window & typeof window | undefined>('WindowObject', undefined);
     const isPlacing = ref(false);
+
+    const availableExpressCheckoutMethods = computed<Record<string, ExpressCheckoutMethod>>(() => {
+      const availablePaymentMethods = root.$store.getters['checkout/getPaymentMethods'];
+      const availableExpressCheckoutMethods: Record<string, ExpressCheckoutMethod> = {};
+
+      for (const method of availablePaymentMethods) {
+        switch (method.code) {
+          case supportedMethodsCodes.GOOGLE_PAY:
+            availableExpressCheckoutMethods['google'] = {
+              is: 'PaymentGooglePay',
+              key: supportedMethodsCodes.GOOGLE_PAY
+            };
+            break;
+          case supportedMethodsCodes.APPLE_PAY:
+            availableExpressCheckoutMethods['apple'] = {
+              is: 'PaymentApplePay',
+              key: supportedMethodsCodes.APPLE_PAY
+            };
+            break;
+          case supportedMethodsCodes.PAY_PAL:
+            availableExpressCheckoutMethods['paypal'] = {
+              is: 'PaymentPayPal',
+              key: supportedMethodsCodes.PAY_PAL
+            };
+            break;
+          default:
+            continue;
+        }
+      }
+
+      return availableExpressCheckoutMethods;
+    });
 
     const platform = computed<Platform>(() => {
       const ua = (windowObj && windowObj.navigator ? windowObj.navigator.userAgent : '').toLowerCase();
@@ -75,20 +113,26 @@ export default defineComponent({
         order = ['paypal', 'google', 'apple'];
       }
 
-      const map = {
-        apple: { is: 'PaymentApplePay', key: 'apple' },
-        paypal: { is: 'PaymentPayPal', key: 'paypal' },
-        google: { is: 'PaymentGooglePay', key: 'google' }
-      };
+      const sortedPaymentMethods = [];
+      const _availableExpressCheckoutMethods = availableExpressCheckoutMethods.value;
 
-      return order.map(k => map[k]);
+      for (const item of order) {
+        const paymentMethod = _availableExpressCheckoutMethods[item];
+
+        if (!paymentMethod) {
+          continue;
+        }
+
+        sortedPaymentMethods.push(paymentMethod);
+      }
+
+      return sortedPaymentMethods;
     });
 
     const braintreeClient = computed<Client>(() => root.$store.getters['braintree/braintreeClient']);
 
     function onOrderAfterPlaced (payload: any) {
-      root.$store.commit(CHECKOUT_UPDATE_EXPRESS_CHECKOUT_DATA_MUTATION, payload);
-      root.$store.commit(CHECKOUT_SET_THANKYOU_MUTATION, true);
+      root.$store.commit(CHECKOUT_UPDATE_SUCCESS_ORDER_DATA_MUTATION, payload);
       root.$router.push({ name: 'checkout', params: { success: 'success' } });
     }
 
