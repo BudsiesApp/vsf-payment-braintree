@@ -7,6 +7,7 @@
 </template>
 
 <script lang="ts">
+import { VueConstructor } from 'vue';
 import googlePayment, { GooglePayment } from 'braintree-web/dist/browser/google-payment';
 import loadScript from '@braintree/asset-loader/dist/load-script';
 
@@ -34,7 +35,11 @@ function getErrorObject (errorMessage: string): google.payments.api.PaymentAutho
   };
 }
 
-export default PaymentMethod.extend({
+interface StaticData {
+  googlePayClient: undefined | google.payments.api.PaymentsClient
+}
+
+export default (PaymentMethod as VueConstructor<InstanceType<typeof PaymentMethod> & StaticData>).extend({
   name: 'PaymentGooglePay',
   data () {
     const expressCheckoutPaymentRequestData: Partial<google.payments.api.PaymentDataRequest> = {
@@ -48,7 +53,6 @@ export default PaymentMethod.extend({
     };
 
     return {
-      googlePayClient: undefined as undefined | google.payments.api.PaymentsClient,
       googlePayCheckoutInstance: undefined as undefined | GooglePayment,
       isGooglePayAvailable: false,
       expressCheckoutPaymentRequestData
