@@ -1,0 +1,2 @@
+// Actual client token expiration timeout based on documentation is 24 hours
+export const BRAINTREE_CLIENT_EXPIRATION_TIMEOUT = 1000 * 60 * 60 * 2; // 2 hours

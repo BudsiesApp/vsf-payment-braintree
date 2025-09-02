@@ -7,8 +7,10 @@ import { actions } from './actions'
 export const module: Module<BraintreeState, any> = {
   namespaced: true,
   state: {
-    trans: null,
-    paymentMethodNonce: undefined
+    trans: [],
+    paymentMethodNonce: undefined,
+    braintreeClient: undefined,
+    expirationDate: Date.now()
   },
   mutations,
   actions,

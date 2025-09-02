@@ -14,11 +14,13 @@ import cardsIcon from './assets/cards-icon.png';
 export const Braintree: StorefrontModule = function ({ app, store }) {
   if (!app.$isServer && !store.hasModule(SN_BRAINTREE)) {
     store.registerModule(SN_BRAINTREE, module);
+    store.dispatch('braintree/createBraintreeClient');
+
     let isCurrentPaymentMethod = false
 
     EventBus.$on('checkout-payment-method-changed', (paymentMethodCode: string) => {
       isCurrentPaymentMethod = Object.values(supportedMethodsCodes)
-        .includes(paymentMethodCode);
+        .includes(paymentMethodCode as supportedMethodsCodes);
     });
 
     EventBus.$on('collect-methods-handled-by-other-modules', (methods: string[]) => {
@@ -35,7 +37,7 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
 
     const onBeforeReplacePaymentMethods = (methods: PaymentMethod[]) => {
       methods.forEach((method) => {
-        if (!method.code || !Object.values(supportedMethodsCodes).includes(method.code)) {
+        if (!method.code || !Object.values(supportedMethodsCodes).includes(method.code as supportedMethodsCodes)) {
           return;
         }
 

@@ -5,6 +5,9 @@ import Vue, { PropType, VueConstructor } from 'vue';
 
 import { InjectType } from 'src/modules/shared';
 
+import { PaymentType } from '../types/payment-type';
+import { ExpressCheckoutAuthorizedCallbackData, ExpressCheckoutUpdateData, ShippingDetailsChangedCallbackData } from '../types/express-checkout-data.interface';
+
 interface InjectedServices {
   window: Window & typeof window
 }
@@ -18,6 +21,18 @@ export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
     showContent: {
       type: Boolean,
       default: false
+    },
+    type: {
+      type: String as PropType<PaymentType>,
+      default: PaymentType.PAYMENT
+    },
+    onExpressCheckoutAuthorized: {
+      type: Function as PropType<((data: ExpressCheckoutAuthorizedCallbackData) => Promise<void>) | undefined>,
+      default: undefined
+    },
+    onShippingDetailsChanged: {
+      type: Function as PropType<((data: ShippingDetailsChangedCallbackData) => Promise<ExpressCheckoutUpdateData>) | undefined>,
+      default: undefined
     }
   },
   inject: {
@@ -33,6 +48,9 @@ export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
     },
     currency (): string {
       return currentStoreView().i18n.currencyCode;
+    },
+    isExpressCheckout (): boolean {
+      return this.type === PaymentType.EXPRESS_CHECKOUT;
     }
   }
 });
