@@ -98,17 +98,19 @@ export const actions: ActionTree<BraintreeState, any> = {
     commit(SET_BRAINTREE_CLIENT_EXPIRATION_DATE, undefined);
 
     const braintreeClientCreationPromise = async (): Promise<Client> => {
-      const token = await dispatch('generateToken');
-      const braintreeClient = await client.create({
-        authorization: token
-      });
+      try {
+        const token = await dispatch('generateToken');
+        const braintreeClient = await client.create({
+          authorization: token
+        });
 
-      commit(SET_BRAINTREE_CLIENT, braintreeClient);
-      commit(SET_BRAINTREE_CLIENT_EXPIRATION_DATE, date + BRAINTREE_CLIENT_EXPIRATION_TIMEOUT);
+        commit(SET_BRAINTREE_CLIENT, braintreeClient);
+        commit(SET_BRAINTREE_CLIENT_EXPIRATION_DATE, date + BRAINTREE_CLIENT_EXPIRATION_TIMEOUT);
 
-      commit(SET_BRAINTREE_CLIENT_CREATION_PROMISE, undefined)
-
-      return braintreeClient;
+        return braintreeClient;
+      } finally {
+        commit(SET_BRAINTREE_CLIENT_CREATION_PROMISE, undefined)
+      }
     };
 
     const promise = braintreeClientCreationPromise()
