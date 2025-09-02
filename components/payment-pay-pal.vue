@@ -19,6 +19,8 @@ import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
 import { getRegionIdByCountryAndStateCode, PAYMENT_ERROR_EVENT } from 'src/modules/shared';
 
+import { Logger } from '@vue-storefront/core/lib/logger';
+
 import { AdditionalAddressData, MainAddressData } from '../types/express-checkout-data.interface';
 import supportedMethodsCodes from '../types/SupportedMethodsCodes';
 import { getFirstAndLastFromFullName } from '../helpers/get-first-and-last-from-full-name.function';
@@ -77,6 +79,7 @@ export default PaymentMethod.extend({
 
         await this.onPayPalSdkLoaded();
       } catch (error) {
+        Logger.error('Checkout instance creation error: ' + error, 'pay-pal')();
         EventBus.$emit(PAYMENT_ERROR_EVENT);
       }
     },
@@ -234,10 +237,12 @@ export default PaymentMethod.extend({
 
         this.$emit('success');
       } catch (error) {
+        Logger.error('Error during payment authorization: ' + error, 'pay-pal')();
         EventBus.$emit(PAYMENT_ERROR_EVENT);
       }
     },
     onPayPalError (): void {
+      Logger.error('Error during payment processing', 'pay-pal')();
       EventBus.$emit(PAYMENT_ERROR_EVENT);
     }
   },

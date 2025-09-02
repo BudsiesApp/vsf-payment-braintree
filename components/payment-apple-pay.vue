@@ -19,6 +19,7 @@ import config from 'config'
 import loadScript from '@braintree/asset-loader/dist/load-script';
 import applePay, { ApplePay } from 'braintree-web/dist/browser/apple-pay';
 
+import { Logger } from '@vue-storefront/core/lib/logger';
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
@@ -75,6 +76,7 @@ export default PaymentMethod.extend({
       try {
         this.applePayCheckoutInstance = await applePay.create({ client: braintreeClient });
       } catch (error) {
+        Logger.error('Checkout instance creation error: ' + error, 'apple-pay')();
         EventBus.$emit(PAYMENT_ERROR_EVENT);
       }
     },
@@ -147,6 +149,7 @@ export default PaymentMethod.extend({
             newLineItems: []
           });
         } catch (e) {
+          Logger.error('Error during shipping contact selection: ' + e, 'apple-pay')();
           EventBus.$emit(PAYMENT_ERROR_EVENT);
         }
       };
@@ -174,6 +177,7 @@ export default PaymentMethod.extend({
             newLineItems: []
           });
         } catch (e) {
+          Logger.error('Error during shipping method selection: ' + e, 'apple-pay')();
           EventBus.$emit(PAYMENT_ERROR_EVENT);
         }
       };
@@ -200,6 +204,7 @@ export default PaymentMethod.extend({
 
         session.completeMerchantValidation(merchantSession);
       } catch (error) {
+        Logger.error('Error during merchant validation: ' + error, 'apple-pay')();
         EventBus.$emit(PAYMENT_ERROR_EVENT);
       }
     },
@@ -254,6 +259,7 @@ export default PaymentMethod.extend({
         this.$emit('success');
         session.completePayment(ApplePaySession.STATUS_SUCCESS);
       } catch (error) {
+        Logger.error('Error during payment authorization: ' + error, 'apple-pay')();
         session.completePayment(ApplePaySession.STATUS_FAILURE);
         EventBus.$emit(PAYMENT_ERROR_EVENT);
       }

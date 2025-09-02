@@ -19,6 +19,7 @@ import { getRegionIdByCountryAndStateCode, PAYMENT_ERROR_EVENT } from 'src/modul
 import { AdditionalAddressData, ExpressCheckoutAuthorizedCallbackData, MainAddressData, ShippingDetailsChangedCallbackData } from '../types/express-checkout-data.interface';
 import supportedMethodsCodes from '../types/SupportedMethodsCodes';
 import { getFirstAndLastFromFullName } from '../helpers/get-first-and-last-from-full-name.function';
+import { Logger } from '@vue-storefront/core/lib/logger';
 
 const googlePaySource = 'https://pay.google.com/gp/p/js/pay.js';
 const googlePayScriptId = 'braintree-dropin-google-payment-script';
@@ -251,6 +252,7 @@ export default (PaymentMethod as VueConstructor<InstanceType<typeof PaymentMetho
 
         this.isGooglePayAvailable = isReadyToPay.result;
       } catch (error) {
+        Logger.error('Checkout instance creation error: ' + error, 'google-pay')();
         this.isGooglePayAvailable = false;
         EventBus.$emit(PAYMENT_ERROR_EVENT);
       }
@@ -285,6 +287,7 @@ export default (PaymentMethod as VueConstructor<InstanceType<typeof PaymentMetho
 
         this.$emit('success');
       } catch (error) {
+        Logger.error('Error during payment processing: ' + error, 'google-pay')();
         EventBus.$emit(PAYMENT_ERROR_EVENT);
       }
     }
