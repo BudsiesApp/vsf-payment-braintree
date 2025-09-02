@@ -18,6 +18,7 @@ import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-brai
 import { getRegionIdByCountryAndStateCode, PAYMENT_ERROR_EVENT } from 'src/modules/shared';
 import { AdditionalAddressData, ExpressCheckoutAuthorizedCallbackData, MainAddressData, ShippingDetailsChangedCallbackData } from '../types/express-checkout-data.interface';
 import supportedMethodsCodes from '../types/SupportedMethodsCodes';
+import { getFirstAndLastFromFullName } from '../helpers/get-first-and-last-from-full-name.function';
 
 const googlePaySource = 'https://pay.google.com/gp/p/js/pay.js';
 const googlePayScriptId = 'braintree-dropin-google-payment-script';
@@ -79,7 +80,7 @@ export default (PaymentMethod as VueConstructor<InstanceType<typeof PaymentMetho
         return Promise.resolve(getErrorObject('Please, provide e-mail address'));
       }
 
-      const [firstName, lastName] = paymentData.shippingAddress.name.split(' ');
+      const { firstName, lastName } = getFirstAndLastFromFullName(paymentData.shippingAddress.name);
 
       const customer: ExpressCheckoutAuthorizedCallbackData['customer'] = {
         emailAddress: paymentData.email,

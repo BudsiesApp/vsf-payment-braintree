@@ -21,6 +21,7 @@ import { getRegionIdByCountryAndStateCode, PAYMENT_ERROR_EVENT } from 'src/modul
 
 import { AdditionalAddressData, MainAddressData } from '../types/express-checkout-data.interface';
 import supportedMethodsCodes from '../types/SupportedMethodsCodes';
+import { getFirstAndLastFromFullName } from '../helpers/get-first-and-last-from-full-name.function';
 
 enum FlowType {
   Vault = 'vault',
@@ -210,11 +211,11 @@ export default PaymentMethod.extend({
           throw new Error('Recipient name is not specified');
         }
 
-        const [shippingFirstName, shippingLastName] = details.shippingAddress.recipientName.split(' ');
+        const { firstName, lastName } = getFirstAndLastFromFullName(details.shippingAddress.recipientName);
 
         const addressData: AdditionalAddressData = {
-          firstName: shippingFirstName,
-          lastName: shippingLastName,
+          firstName,
+          lastName,
           streetAddress: details.shippingAddress?.line1 || ''
         };
 

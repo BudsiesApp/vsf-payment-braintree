@@ -61,6 +61,9 @@ export default defineComponent({
     const windowObj = inject<Window & typeof window | undefined>('WindowObject', undefined);
     const isPlacing = ref(false);
 
+    let activeShippingDetailsChangedPromise: undefined | Promise<ExpressCheckoutUpdateData>;
+    let nextShippingDetailsChangedData: undefined | ShippingDetailsChangedCallbackData;
+
     const availableExpressCheckoutMethods = computed<Record<string, ExpressCheckoutMethod>>(() => {
       const availablePaymentMethods = root.$store.getters['checkout/getPaymentMethods'];
       const availableExpressCheckoutMethods: Record<string, ExpressCheckoutMethod> = {};
@@ -177,7 +180,7 @@ export default defineComponent({
       }
     }
 
-    async function onShippingDetailsChanged (data: ShippingDetailsChangedCallbackData): Promise<ExpressCheckoutUpdateData> {
+    async function updateShippingDetails (data: ShippingDetailsChangedCallbackData): Promise<ExpressCheckoutUpdateData> {
       if (data.shippingAddress) {
         root.$store.commit(CHECKOUT_UPDATE_SHIPPING_DETAILS_MUTATION, data.shippingAddress);
       }
@@ -210,6 +213,15 @@ export default defineComponent({
 
       await root.$store.dispatch('cart/fetchTotals');
 
+      if (nextShippingDetailsChangedData) {
+        activeShippingDetailsChangedPromise = updateShippingDetails(nextShippingDetailsChangedData);
+        nextShippingDetailsChangedData = undefined;
+
+        return activeShippingDetailsChangedPromise;
+      }
+
+      activeShippingDetailsChangedPromise = undefined;
+
       return {
         total: {
           final: totals.value
@@ -217,6 +229,16 @@ export default defineComponent({
         availableShippingMethods: shippingMethods.value,
         selectedShippingMethod: selectedShippingMethod.method_code || ''
       }
+    }
+
+    async function onShippingDetailsChanged (data: ShippingDetailsChangedCallbackData): Promise<ExpressCheckoutUpdateData> {
+      if (activeShippingDetailsChangedPromise) {
+        nextShippingDetailsChangedData = data;
+        return activeShippingDetailsChangedPromise;
+      }
+
+      activeShippingDetailsChangedPromise = updateShippingDetails(data);
+      return activeShippingDetailsChangedPromise;
     }
 
     const { prepareOrderData } = useOrderCreation(context);
