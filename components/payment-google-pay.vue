@@ -15,7 +15,7 @@ import config from 'config';
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus';
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
-import { getRegionIdByCountryAndStateCode, PAYMENT_ERROR_EVENT } from 'src/modules/shared';
+import { getRegionIdByCountryAndStateCode, PAYMENT_ERROR_EVENT, DEFAULT_CURRENCY_CODE } from 'src/modules/shared';
 import { AdditionalAddressData, ExpressCheckoutAuthorizedCallbackData, MainAddressData, ShippingDetailsChangedCallbackData } from '../types/express-checkout-data.interface';
 import supportedMethodsCodes from '../types/SupportedMethodsCodes';
 import { getFirstAndLastFromFullName } from '../helpers/get-first-and-last-from-full-name.function';
@@ -25,6 +25,7 @@ const googlePaySource = 'https://pay.google.com/gp/p/js/pay.js';
 const googlePayScriptId = 'braintree-dropin-google-payment-script';
 
 const BRAINTREE_SANDBOX_CODE = 'sandbox';
+const ABORT_PAYMENT_ERROR_NAME = 'AbortError';
 
 function getErrorObject (errorMessage: string): google.payments.api.PaymentAuthorizationResult {
   return {
@@ -165,7 +166,7 @@ export default (PaymentMethod as VueConstructor<InstanceType<typeof PaymentMetho
         newTransactionInfo: {
           totalPriceStatus: 'FINAL',
           totalPrice: result.total.final.toString(),
-          currencyCode: 'USD'
+          currencyCode: DEFAULT_CURRENCY_CODE
         },
         newShippingOptionParameters: {
           shippingOptions: convertedShippingOptions,
@@ -266,10 +267,12 @@ export default (PaymentMethod as VueConstructor<InstanceType<typeof PaymentMetho
         throw new Error('GooglePay client is undefined');
       }
 
+      this.$emit('payment-started');
+
       try {
         let paymentRequest = await this.googlePayCheckoutInstance.createPaymentDataRequest({
           transactionInfo: {
-            currencyCode: 'USD',
+            currencyCode: DEFAULT_CURRENCY_CODE,
             totalPriceStatus: 'FINAL',
             totalPrice: this.total.toString(10)
           }
@@ -287,6 +290,10 @@ export default (PaymentMethod as VueConstructor<InstanceType<typeof PaymentMetho
 
         this.$emit('success');
       } catch (error) {
+        if ((error as any).name === ABORT_PAYMENT_ERROR_NAME) {
+          return;
+        }
+
         Logger.error('Error during payment processing: ' + error, 'google-pay')();
         EventBus.$emit(PAYMENT_ERROR_EVENT);
       }
