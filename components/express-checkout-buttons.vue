@@ -29,7 +29,9 @@ import {
 } from '@vue/composition-api';
 import { Client } from 'braintree-web';
 import Bowser from 'bowser';
+import { parsePhoneNumberWithError } from 'libphonenumber-js';
 
+import { currentStoreView } from '@vue-storefront/core/lib/multistore';
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus';
 import { registerModule } from '@vue-storefront/core/lib/modules';
 import { OrderModule } from '@vue-storefront/core/modules/order';
@@ -37,7 +39,7 @@ import { CHECKOUT_UPDATE_SHIPPING_DETAILS_MUTATION, CHECKOUT_UPDATE_PAYMENT_DETA
 import PaymentApplePay from 'src/modules/payment-braintree/components/payment-apple-pay.vue';
 import PaymentPayPal from 'src/modules/payment-braintree/components/payment-pay-pal.vue';
 import PaymentGooglePay from 'src/modules/payment-braintree/components/payment-google-pay.vue';
-import { CartEvents, PAYMENT_ERROR_EVENT } from 'src/modules/shared';
+import { CartEvents, createPhoneHelpers, PAYMENT_ERROR_EVENT } from 'src/modules/shared';
 
 import { PaymentType } from '../types/payment-type';
 import { SN_BRAINTREE, SET_PAYMENT_METHOD_NONCE } from '../store/mutation-types';
@@ -48,6 +50,8 @@ interface ExpressCheckoutMethod {
   is: string,
   key: supportedMethodsCodes
 };
+
+const phoneHelpers = createPhoneHelpers(parsePhoneNumberWithError);
 
 export default defineComponent({
   name: 'ExpressCheckoutButtons',
@@ -243,6 +247,29 @@ export default defineComponent({
 
     const onExpressCheckoutAuthorized = async (data: ExpressCheckoutAuthorizedCallbackData): Promise<void> => {
       await updateCustomerData(data.customer);
+
+      const { i18n } = currentStoreView();
+      const defaultCountry = i18n.defaultCountry;
+
+      if (data.shippingDetails.phoneNumber) {
+        const checkoutShippingDetails = root.$store.getters['checkout/getShippingDetails'];
+        const country = checkoutShippingDetails.country || defaultCountry;
+
+        data.shippingDetails.phoneNumber = phoneHelpers.formatPhoneNumberToE164(
+          data.shippingDetails.phoneNumber,
+          country
+        ) || undefined;
+      }
+
+      if (data.paymentDetails.phoneNumber) {
+        const checkoutPaymentDetails = root.$store.getters['checkout/getPaymentDetails'];
+        const country = checkoutPaymentDetails.country || defaultCountry;
+
+        data.paymentDetails.phoneNumber = phoneHelpers.formatPhoneNumberToE164(
+          data.paymentDetails.phoneNumber,
+          country
+        ) || undefined;
+      }
 
       root.$store.commit(CHECKOUT_UPDATE_SHIPPING_DETAILS_MUTATION, data.shippingDetails);
       root.$store.commit(CHECKOUT_UPDATE_PAYMENT_DETAILS_MUTATION, data.paymentDetails);
