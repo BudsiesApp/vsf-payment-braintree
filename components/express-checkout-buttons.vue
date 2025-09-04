@@ -11,6 +11,7 @@
         :on-express-checkout-authorized="onExpressCheckoutAuthorized"
         :on-shipping-details-changed="onShippingDetailsChanged"
         :type="PaymentType.EXPRESS_CHECKOUT"
+        @payment-started="onPaymentStarted"
         @success="onPaymentSuccess"
       />
     </div>
@@ -27,6 +28,7 @@ import {
   onBeforeUnmount
 } from '@vue/composition-api';
 import { Client } from 'braintree-web';
+import Bowser from 'bowser';
 
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus';
 import { registerModule } from '@vue-storefront/core/lib/modules';
@@ -35,14 +37,12 @@ import { CHECKOUT_UPDATE_SHIPPING_DETAILS_MUTATION, CHECKOUT_UPDATE_PAYMENT_DETA
 import PaymentApplePay from 'src/modules/payment-braintree/components/payment-apple-pay.vue';
 import PaymentPayPal from 'src/modules/payment-braintree/components/payment-pay-pal.vue';
 import PaymentGooglePay from 'src/modules/payment-braintree/components/payment-google-pay.vue';
-import { PAYMENT_ERROR_EVENT } from 'src/modules/shared';
+import { CartEvents, PAYMENT_ERROR_EVENT } from 'src/modules/shared';
 
 import { PaymentType } from '../types/payment-type';
 import { SN_BRAINTREE, SET_PAYMENT_METHOD_NONCE } from '../store/mutation-types';
 import { ExpressCheckoutAuthorizedCallbackData, ExpressCheckoutUpdateData, ShippingDetailsChangedCallbackData } from '../types/express-checkout-data.interface';
 import supportedMethodsCodes from '../types/SupportedMethodsCodes';
-
-type Platform = 'ios' | 'mac' | 'android' | 'windows' | 'other';
 
 interface ExpressCheckoutMethod {
   is: string,
@@ -58,7 +58,7 @@ export default defineComponent({
   },
   setup (_, context) {
     const root = context.root;
-    const windowObj = inject<Window & typeof window | undefined>('WindowObject', undefined);
+    const windowObj = inject<Window & typeof window>('WindowObject');
     const isPlacing = ref(false);
 
     let activeShippingDetailsChangedPromise: undefined | Promise<ExpressCheckoutUpdateData>;
@@ -96,24 +96,22 @@ export default defineComponent({
       return availableExpressCheckoutMethods;
     });
 
-    const platform = computed<Platform>(() => {
-      const ua = (windowObj && windowObj.navigator ? windowObj.navigator.userAgent : '').toLowerCase();
-      if (/android/.test(ua)) return 'android';
-      if (/iphone|ipad|ipod/.test(ua)) return 'ios';
-      if (/macintosh|mac os x/.test(ua)) return 'mac';
-      if (/windows/.test(ua)) return 'windows';
-      return 'other';
-    });
-
     const sorted = computed(() => {
+      const browser = Bowser.getParser(windowObj?.navigator.userAgent || '');
+      const os = browser.getOS();
+
       let order: ('apple' | 'paypal' | 'google')[] = [];
 
-      if (['ios', 'mac'].includes(platform.value)) {
-        order = ['apple', 'paypal', 'google'];
-      } else if (platform.value === 'android') {
-        order = ['google', 'paypal', 'apple'];
-      } else {
-        order = ['paypal', 'google', 'apple'];
+      switch (os.name) {
+        case Bowser.OS_MAP.MacOS:
+        case Bowser.OS_MAP.iOS:
+          order = ['apple', 'paypal', 'google'];
+          break;
+        case Bowser.OS_MAP.Android:
+          order = ['google', 'paypal', 'apple'];
+          break;
+        default:
+          order = ['paypal', 'google', 'apple'];
       }
 
       const sortedPaymentMethods = [];
@@ -254,6 +252,10 @@ export default defineComponent({
       );
     };
 
+    const onPaymentStarted = (): void => {
+      EventBus.$emit(CartEvents.BEGIN_CHECKOUT, true);
+    };
+
     const onPaymentSuccess = async (): Promise<void> => {
       if (isPlacing.value) return;
       isPlacing.value = true;
@@ -276,8 +278,8 @@ export default defineComponent({
       braintreeClient,
       onShippingDetailsChanged,
       onExpressCheckoutAuthorized,
+      onPaymentStarted,
       onPaymentSuccess,
-      platform,
       sorted,
       PaymentType
     };
@@ -290,7 +292,14 @@ export default defineComponent({
   ._buttons {
     display: flex;
     flex-direction: column;
-    row-gap: var(--spacer-sm);
+
+    ._button {
+      margin-top: var(--spacer-sm);
+
+      &:first-child {
+        margin-top: 0;
+      }
+    }
   }
 }
 </style>

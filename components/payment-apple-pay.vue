@@ -107,6 +107,7 @@ export default PaymentMethod.extend({
         ];
       }
 
+
       const session = new ApplePaySession(3, paymentRequest);
 
       session.onshippingcontactselected = async (event: any) => {
@@ -185,6 +186,7 @@ export default PaymentMethod.extend({
       session.onvalidatemerchant = (event: any) => this.onValidateMerchant(event, session);
       session.onpaymentauthorized = (event: any) => this.onPaymentAuthorized(event, session);
       session.begin();
+      this.$emit('payment-started');
     },
     isApplePayAvailable (): boolean {
       ApplePaySession = (this.window as any).ApplePaySession;
@@ -281,6 +283,8 @@ export default PaymentMethod.extend({
 
 <style lang="scss" scoped>
 .payment-apple-pay {
+  display: flex;
+
   ._express-checkout-button {
     --apple-pay-button-width: 100%;
     --apple-pay-button-height: 40px;
