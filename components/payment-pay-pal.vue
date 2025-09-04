@@ -17,7 +17,7 @@ import paypalCheckout, { PayPalCheckoutTokenizationOptions, ShippingOptionType }
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
-import { getRegionIdByCountryAndStateCode, PAYMENT_ERROR_EVENT } from 'src/modules/shared';
+import { getRegionIdByCountryAndStateCode, PAYMENT_ERROR_EVENT, DEFAULT_CURRENCY_CODE } from 'src/modules/shared';
 
 import { Logger } from '@vue-storefront/core/lib/logger';
 
@@ -154,7 +154,7 @@ export default PaymentMethod.extend({
           label: method.method_title?.toString() || method.method_code,
           selected: method.method_code === result.selectedShippingMethod,
           amount: {
-            currency: 'USD',
+            currency: DEFAULT_CURRENCY_CODE,
             value: method.price_incl_tax.toString()
           }
         });
@@ -163,7 +163,7 @@ export default PaymentMethod.extend({
       return this.paypalCheckoutInstance.updatePayment({
         paymentId: data.paymentId,
         amount: result.total.final.toString(),
-        currency: 'USD',
+        currency: DEFAULT_CURRENCY_CODE,
         shippingOptions: convertedShippingOptions
       });
     },
@@ -183,6 +183,8 @@ export default PaymentMethod.extend({
         paymentData.enableShippingAddress = true;
         paymentData.shippingOptions = [];
       }
+
+      this.$emit('payment-started');
 
       return this.paypalCheckoutInstance.createPayment(paymentData);
     },
