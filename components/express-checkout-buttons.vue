@@ -195,25 +195,17 @@ export default defineComponent({
 
       let selectedShippingMethod = shippingMethods.value.find((method) => method.method_code === data.shippingMethod) || shippingMethods.value[0];
 
-      if (!selectedShippingMethod) {
-        return {
-          total: {
-            final: totals.value
-          },
-          availableShippingMethods: shippingMethods.value,
-          selectedShippingMethod: ''
-        }
+      if (selectedShippingMethod) {
+        root.$store.commit(
+          CHECKOUT_UPDATE_SHIPPING_DETAILS_MUTATION,
+          {
+            shippingCarrier: selectedShippingMethod.carrier_code,
+            shippingMethod: selectedShippingMethod.method_code
+          }
+        );
+
+        await root.$store.dispatch('cart/fetchTotals');
       }
-
-      root.$store.commit(
-        CHECKOUT_UPDATE_SHIPPING_DETAILS_MUTATION,
-        {
-          shippingCarrier: selectedShippingMethod.carrier_code,
-          shippingMethod: selectedShippingMethod.method_code
-        }
-      );
-
-      await root.$store.dispatch('cart/fetchTotals');
 
       if (nextShippingDetailsChangedData) {
         activeShippingDetailsChangedPromise = updateShippingDetails(nextShippingDetailsChangedData);
@@ -223,6 +215,16 @@ export default defineComponent({
       }
 
       activeShippingDetailsChangedPromise = undefined;
+
+      if (!selectedShippingMethod) {
+        return {
+          total: {
+            final: totals.value
+          },
+          availableShippingMethods: shippingMethods.value,
+          selectedShippingMethod: ''
+        }
+      }
 
       return {
         total: {

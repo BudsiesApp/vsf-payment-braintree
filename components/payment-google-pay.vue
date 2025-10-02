@@ -45,20 +45,29 @@ interface StaticData {
 export default (PaymentMethod as VueConstructor<InstanceType<typeof PaymentMethod> & StaticData>).extend({
   name: 'PaymentGooglePay',
   data () {
-    const expressCheckoutPaymentRequestData: Partial<google.payments.api.PaymentDataRequest> = {
-      emailRequired: true,
-      shippingAddressRequired: true,
-      shippingAddressParameters: {
-        phoneNumberRequired: true
-      } as any,
-      shippingOptionRequired: true,
-      callbackIntents: ['SHIPPING_ADDRESS', 'SHIPPING_OPTION', 'PAYMENT_AUTHORIZATION']
-    };
-
     return {
       googlePayCheckoutInstance: undefined as undefined | GooglePayment,
-      isGooglePayAvailable: false,
-      expressCheckoutPaymentRequestData
+      isGooglePayAvailable: false
+    }
+  },
+  computed: {
+    expressCheckoutPaymentRequestData (): Partial<google.payments.api.PaymentDataRequest> {
+      const isShippingOptionRequired = !this.$store.getters['cart/isVirtualCart'];
+      const callbackIntents: google.payments.api.CallbackIntent[] = ['SHIPPING_ADDRESS', 'PAYMENT_AUTHORIZATION']
+
+      if (isShippingOptionRequired) {
+        callbackIntents.push('SHIPPING_OPTION');
+      }
+
+      return {
+        emailRequired: true,
+        shippingAddressRequired: true,
+        shippingAddressParameters: {
+          phoneNumberRequired: true
+        } as any,
+        shippingOptionRequired: isShippingOptionRequired,
+        callbackIntents
+      };
     }
   },
   async created (): Promise<void> {
