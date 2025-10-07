@@ -11,6 +11,7 @@ export default function getComponentByMethodCode (methodCode: string): Component
   switch (methodCode) {
     case supportedMethodsCodes.PAY_PAL:
     case supportedMethodsCodes.MAGENTO1_PAY_PAL:
+    case supportedMethodsCodes.VENMO:
       return PaymentPayPal;
     case supportedMethodsCodes.CARD:
     case supportedMethodsCodes.MAGENTO1_CARD:
