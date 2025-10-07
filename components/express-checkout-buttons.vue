@@ -6,6 +6,7 @@
         class="_button"
         :is="btn.is"
         :key="btn.key"
+        v-bind="btn.props"
         :braintree-client="braintreeClient"
         :show-content="true"
         :on-express-checkout-authorized="onExpressCheckoutAuthorized"
@@ -48,7 +49,8 @@ import supportedMethodsCodes from '../types/SupportedMethodsCodes';
 
 interface ExpressCheckoutMethod {
   is: string,
-  key: supportedMethodsCodes
+  key: supportedMethodsCodes,
+  props?: { [key: string]: any }
 };
 
 const phoneHelpers = createPhoneHelpers(parsePhoneNumberWithError);
@@ -89,7 +91,19 @@ export default defineComponent({
           case supportedMethodsCodes.PAY_PAL:
             availableExpressCheckoutMethods['paypal'] = {
               is: 'PaymentPayPal',
-              key: supportedMethodsCodes.PAY_PAL
+              key: supportedMethodsCodes.PAY_PAL,
+              props: {
+                fundingType: supportedMethodsCodes.PAY_PAL
+              }
+            };
+            break;
+          case supportedMethodsCodes.VENMO:
+            availableExpressCheckoutMethods['venmo'] = {
+              is: 'PaymentPayPal',
+              key: supportedMethodsCodes.VENMO,
+              props: {
+                fundingType: supportedMethodsCodes.VENMO
+              }
             };
             break;
           default:
@@ -104,18 +118,18 @@ export default defineComponent({
       const browser = Bowser.getParser(windowObj?.navigator.userAgent || '');
       const os = browser.getOS();
 
-      let order: ('apple' | 'paypal' | 'google')[] = [];
+      let order: ('apple' | 'paypal' | 'google' | 'venmo')[] = [];
 
       switch (os.name) {
         case Bowser.OS_MAP.MacOS:
         case Bowser.OS_MAP.iOS:
-          order = ['apple', 'paypal', 'google'];
+          order = ['apple', 'paypal', 'google', 'venmo'];
           break;
         case Bowser.OS_MAP.Android:
-          order = ['google', 'paypal', 'apple'];
+          order = ['google', 'paypal', 'apple', 'venmo'];
           break;
         default:
-          order = ['paypal', 'google', 'apple'];
+          order = ['paypal', 'google', 'apple', 'venmo'];
       }
 
       const sortedPaymentMethods = [];

@@ -11,6 +11,7 @@
 </template>
 
 <script lang="ts">
+import { PropType } from 'vue';
 import { PayPalCheckoutCreatePaymentOptions } from 'braintree-web';
 import paypalCheckout, { PayPalCheckoutTokenizationOptions, ShippingOptionType } from 'braintree-web/dist/browser/paypal-checkout';
 
@@ -24,6 +25,7 @@ import { Logger } from '@vue-storefront/core/lib/logger';
 import { AdditionalAddressData, MainAddressData } from '../types/express-checkout-data.interface';
 import supportedMethodsCodes from '../types/SupportedMethodsCodes';
 import { getFirstAndLastFromFullName } from '../helpers/get-first-and-last-from-full-name.function';
+import { PayPalCheckoutLoadPayPalSDKOptions } from 'braintree-web/paypal-checkout';
 
 enum FlowType {
   Vault = 'vault',
@@ -42,6 +44,10 @@ export default PaymentMethod.extend({
     isOrderPlacementDisabled: {
       type: Boolean,
       default: false
+    },
+    fundingType: {
+      type: String as PropType<supportedMethodsCodes>,
+      default: supportedMethodsCodes.PAY_PAL
     }
   },
   data () {
@@ -59,6 +65,9 @@ export default PaymentMethod.extend({
   computed: {
     showPayPalButtonContainer (): boolean {
       return this.showContent && !this.isOrderPlacementDisabled;
+    },
+    isVenmoFunding (): boolean {
+      return this.fundingType === supportedMethodsCodes.VENMO;
     }
   },
   methods: {
@@ -72,10 +81,18 @@ export default PaymentMethod.extend({
           client: braintreeClient
         });
 
-        await this.paypalCheckoutInstance.loadPayPalSDK({
+        const sdkOptions: PayPalCheckoutLoadPayPalSDKOptions = {
           currency: this.currency,
-          intent: 'capture'
-        });
+          intent: 'capture',
+          debug: true
+        };
+
+        if (this.isVenmoFunding) {
+          sdkOptions['enable-funding'] = 'venmo';
+          sdkOptions['buyer-country'] = 'US';
+        }
+
+        await this.paypalCheckoutInstance.loadPayPalSDK(sdkOptions);
 
         await this.onPayPalSdkLoaded();
       } catch (error) {
@@ -91,7 +108,7 @@ export default PaymentMethod.extend({
 
       const buttons = await paypal.Buttons({
         onShippingChange: this.onPayPalShippingChange,
-        fundingSource: paypal.FUNDING.PAYPAL,
+        fundingSource: this.isVenmoFunding ? paypal.FUNDING.VENMO : paypal.FUNDING.PAYPAL,
         style: {
           label: this.isExpressCheckout ? 'checkout' : 'pay',
           color: 'blue',
@@ -226,7 +243,7 @@ export default PaymentMethod.extend({
 
         await this.onExpressCheckoutAuthorized(
           {
-            paymentMethod: supportedMethodsCodes.PAY_PAL,
+            paymentMethod: this.fundingType,
             customer: {
               firstName: details.firstName,
               lastName: details.lastName,
