@@ -38,7 +38,7 @@ import { registerModule } from '@vue-storefront/core/lib/modules';
 import { OrderModule } from '@vue-storefront/core/modules/order';
 import { CHECKOUT_UPDATE_SHIPPING_DETAILS_MUTATION, CHECKOUT_UPDATE_PAYMENT_DETAILS_MUTATION, useOrderCreation, CHECKOUT_UPDATE_SUCCESS_ORDER_DATA_MUTATION } from '@vue-storefront/core/modules/checkout';
 import PaymentApplePay from 'src/modules/payment-braintree/components/payment-apple-pay.vue';
-import PaymentPayPal from 'src/modules/payment-braintree/components/payment-pay-pal.vue';
+import PaymentPayPal, { PaymentMethod as PayPalPaymentMethod } from 'src/modules/payment-braintree/components/payment-pay-pal.vue';
 import PaymentGooglePay from 'src/modules/payment-braintree/components/payment-google-pay.vue';
 import { CartEvents, createPhoneHelpers, PAYMENT_ERROR_EVENT } from 'src/modules/shared';
 
@@ -73,6 +73,7 @@ export default defineComponent({
     const availableExpressCheckoutMethods = computed<Record<string, ExpressCheckoutMethod>>(() => {
       const availablePaymentMethods = root.$store.getters['checkout/getPaymentMethods'];
       const availableExpressCheckoutMethods: Record<string, ExpressCheckoutMethod> = {};
+      const payPalPaymentMethods: PayPalPaymentMethod[] = [];
 
       for (const method of availablePaymentMethods) {
         switch (method.code) {
@@ -89,26 +90,22 @@ export default defineComponent({
             };
             break;
           case supportedMethodsCodes.PAY_PAL:
-            availableExpressCheckoutMethods['paypal'] = {
-              is: 'PaymentPayPal',
-              key: supportedMethodsCodes.PAY_PAL,
-              props: {
-                fundingType: supportedMethodsCodes.PAY_PAL
-              }
-            };
-            break;
           case supportedMethodsCodes.VENMO:
-            availableExpressCheckoutMethods['venmo'] = {
-              is: 'PaymentPayPal',
-              key: supportedMethodsCodes.VENMO,
-              props: {
-                fundingType: supportedMethodsCodes.VENMO
-              }
-            };
+            payPalPaymentMethods.push(method.code);
             break;
           default:
             continue;
         }
+      }
+
+      if (payPalPaymentMethods.length > 0) {
+        availableExpressCheckoutMethods['paypal'] = {
+          is: 'PaymentPayPal',
+          key: supportedMethodsCodes.PAY_PAL,
+          props: {
+            paymentMethods: payPalPaymentMethods
+          }
+        };
       }
 
       return availableExpressCheckoutMethods;
@@ -118,18 +115,18 @@ export default defineComponent({
       const browser = Bowser.getParser(windowObj?.navigator.userAgent || '');
       const os = browser.getOS();
 
-      let order: ('apple' | 'paypal' | 'google' | 'venmo')[] = [];
+      let order: ('apple' | 'paypal' | 'google')[] = [];
 
       switch (os.name) {
         case Bowser.OS_MAP.MacOS:
         case Bowser.OS_MAP.iOS:
-          order = ['apple', 'paypal', 'google', 'venmo'];
+          order = ['apple', 'paypal', 'google'];
           break;
         case Bowser.OS_MAP.Android:
-          order = ['google', 'paypal', 'apple', 'venmo'];
+          order = ['google', 'paypal', 'apple'];
           break;
         default:
-          order = ['paypal', 'google', 'apple', 'venmo'];
+          order = ['paypal', 'google', 'apple'];
       }
 
       const sortedPaymentMethods = [];

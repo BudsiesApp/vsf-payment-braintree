@@ -14,18 +14,17 @@
 import { PropType } from 'vue';
 import { PayPalCheckoutCreatePaymentOptions } from 'braintree-web';
 import paypalCheckout, { PayPalCheckoutTokenizationOptions, ShippingOptionType } from 'braintree-web/dist/browser/paypal-checkout';
+import { PayPalCheckoutLoadPayPalSDKOptions } from 'braintree-web/paypal-checkout';
 
+import { Logger } from '@vue-storefront/core/lib/logger';
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
 import { getRegionIdByCountryAndStateCode, PAYMENT_ERROR_EVENT, DEFAULT_CURRENCY_CODE } from 'src/modules/shared';
 
-import { Logger } from '@vue-storefront/core/lib/logger';
-
 import { AdditionalAddressData, MainAddressData } from '../types/express-checkout-data.interface';
-import supportedMethodsCodes from '../types/SupportedMethodsCodes';
 import { getFirstAndLastFromFullName } from '../helpers/get-first-and-last-from-full-name.function';
-import { PayPalCheckoutLoadPayPalSDKOptions } from 'braintree-web/paypal-checkout';
+import supportedMethodsCodes from '../types/SupportedMethodsCodes';
 
 enum FlowType {
   Vault = 'vault',
@@ -38,6 +37,8 @@ enum Intent {
   Capture = 'capture'
 }
 
+export type PaymentMethod = supportedMethodsCodes.PAY_PAL | supportedMethodsCodes.VENMO;
+
 export default PaymentMethod.extend({
   name: 'PaymentPayPal',
   props: {
@@ -45,9 +46,9 @@ export default PaymentMethod.extend({
       type: Boolean,
       default: false
     },
-    fundingType: {
-      type: String as PropType<supportedMethodsCodes>,
-      default: supportedMethodsCodes.PAY_PAL
+    paymentMethods: {
+      type: Array as PropType<PaymentMethod[]>,
+      required: true
     }
   },
   data () {
@@ -65,14 +66,14 @@ export default PaymentMethod.extend({
   computed: {
     showPayPalButtonContainer (): boolean {
       return this.showContent && !this.isOrderPlacementDisabled;
-    },
-    isVenmoFunding (): boolean {
-      return this.fundingType === supportedMethodsCodes.VENMO;
     }
   },
   methods: {
-    async createPaypalCheckoutInstance (braintreeClient: braintree.Client): Promise<void> {
-      if (this.paypalCheckoutInstance) {
+    async createPaypalCheckoutInstance (
+      braintreeClient: braintree.Client,
+      force: boolean = false
+    ): Promise<void> {
+      if (this.paypalCheckoutInstance && !force) {
         return;
       }
 
@@ -83,11 +84,10 @@ export default PaymentMethod.extend({
 
         const sdkOptions: PayPalCheckoutLoadPayPalSDKOptions = {
           currency: this.currency,
-          intent: 'capture',
-          debug: true
+          intent: 'capture'
         };
 
-        if (this.isVenmoFunding) {
+        if (this.paymentMethods.includes(supportedMethodsCodes.VENMO)) {
           sdkOptions['enable-funding'] = 'venmo';
           sdkOptions['buyer-country'] = 'US';
         }
@@ -106,21 +106,28 @@ export default PaymentMethod.extend({
         return;
       }
 
-      const buttons = await paypal.Buttons({
-        onShippingChange: this.onPayPalShippingChange,
-        fundingSource: this.isVenmoFunding ? paypal.FUNDING.VENMO : paypal.FUNDING.PAYPAL,
-        style: {
-          label: this.isExpressCheckout ? 'checkout' : 'pay',
-          color: 'blue',
-          height: 40,
-          disableMaxWidth: true
-        },
-        createOrder: this.onPayPalCreateOrder,
-        onApprove: this.onPayPalApprove,
-        onError: this.onPayPalError
-      });
+      const fundingSourcesMapping: Record<PaymentMethod, paypal.FUNDING> = {
+        [supportedMethodsCodes.VENMO]: paypal.FUNDING.VENMO,
+        [supportedMethodsCodes.PAY_PAL]: paypal.FUNDING.PAYPAL
+      };
 
-      buttons.render('#pay-pal-button-container');
+      for (const paymentMethod of this.paymentMethods) {
+        const buttons = await paypal.Buttons({
+          onShippingChange: this.onPayPalShippingChange,
+          fundingSource: fundingSourcesMapping[paymentMethod],
+          style: {
+            label: this.isExpressCheckout ? 'checkout' : 'pay',
+            color: 'blue',
+            height: 40,
+            disableMaxWidth: true
+          },
+          createOrder: this.onPayPalCreateOrder,
+          onApprove: (data: PayPalCheckoutTokenizationOptions) => this.onPayPalApprove(data, paymentMethod),
+          onError: this.onPayPalError
+        });
+
+        buttons.render('#pay-pal-button-container');
+      }
     },
     async onPayPalShippingChange (data: any, actions: any) {
       if (!this.isExpressCheckout) {
@@ -205,7 +212,7 @@ export default PaymentMethod.extend({
 
       return this.paypalCheckoutInstance.createPayment(paymentData);
     },
-    async onPayPalApprove (data: PayPalCheckoutTokenizationOptions): Promise<void> {
+    async onPayPalApprove (data: PayPalCheckoutTokenizationOptions, paymentMethod: PaymentMethod): Promise<void> {
       if (!this.paypalCheckoutInstance) {
         throw new Error('paypalCheckoutInstance is not defined')
       }
@@ -243,7 +250,7 @@ export default PaymentMethod.extend({
 
         await this.onExpressCheckoutAuthorized(
           {
-            paymentMethod: this.fundingType,
+            paymentMethod,
             customer: {
               firstName: details.firstName,
               lastName: details.lastName,
@@ -274,6 +281,15 @@ export default PaymentMethod.extend({
 
         this.createPaypalCheckoutInstance(val);
       }
+    },
+    paymentMethods: {
+      handler () {
+        if (!this.braintreeClient) {
+          return;
+        }
+
+        this.createPaypalCheckoutInstance(this.braintreeClient, true);
+      }
     }
   }
 })
@@ -284,11 +300,13 @@ export default PaymentMethod.extend({
 
 .payment-pay-pal {
   ._pay-pal-button-container {
-      display: flex;
-      margin: var(--spacer-sm) 0;
-      justify-content: center;
-      align-items: center;
-      padding: 0;
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--payment-pay-pal-buttons-gap, var(--spacer-sm));
+    margin: var(--spacer-sm) 0;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
   }
 
   &.-express-checkout {
