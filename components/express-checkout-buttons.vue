@@ -333,16 +333,20 @@ export default defineComponent({
 
         let paymentMethodNonce = '';
 
+        const additionalData: Record<string, any> = {};
+
         if (!isAmazonPay) {
           paymentMethodNonce = root.$store.getters['braintree/paymentMethodNonce'];
           root.$store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_METHOD_NONCE}`, undefined);
+          additionalData.payment_method_nonce = paymentMethodNonce;
         } else {
           paymentMethodNonce = root.$store.getters[PAYMENT_NONCE_GETTER];
           root.$store.commit(CLEAR_PAYMENT_NONCE_MUTATION);
+          additionalData.amazon_session_id = paymentMethodNonce;
         }
         await root.$store.dispatch(
           'checkout/placeOrder',
-          { order: prepareOrderData({ payment_method_nonce: paymentMethodNonce }) }
+          { order: prepareOrderData(additionalData) }
         );
       } finally {
         isPlacing.value = false;
