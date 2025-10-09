@@ -40,6 +40,8 @@ import PaymentApplePay from 'src/modules/payment-braintree/components/payment-ap
 import PaymentPayPal from 'src/modules/payment-braintree/components/payment-pay-pal.vue';
 import PaymentGooglePay from 'src/modules/payment-braintree/components/payment-google-pay.vue';
 import { CartEvents, createPhoneHelpers, PAYMENT_ERROR_EVENT } from 'src/modules/shared';
+import PaymentAmazonPay from 'src/modules/vsf-amazon-pay/components/payment-amazon-pay.vue';
+import { SupportedMethodCodes as AmazonPaySupportedMethodCodes, CLEAR_PAYMENT_NONCE_MUTATION, PAYMENT_NONCE_GETTER } from 'src/modules/vsf-amazon-pay';
 
 import { PaymentType } from '../types/payment-type';
 import { SN_BRAINTREE, SET_PAYMENT_METHOD_NONCE } from '../store/mutation-types';
@@ -48,7 +50,8 @@ import supportedMethodsCodes from '../types/SupportedMethodsCodes';
 
 interface ExpressCheckoutMethod {
   is: string,
-  key: supportedMethodsCodes
+  // TODO: replace
+  key: supportedMethodsCodes | 'amazon_payment_v2'
 };
 
 const phoneHelpers = createPhoneHelpers(parsePhoneNumberWithError);
@@ -58,7 +61,8 @@ export default defineComponent({
   components: {
     PaymentApplePay,
     PaymentPayPal,
-    PaymentGooglePay
+    PaymentGooglePay,
+    PaymentAmazonPay
   },
   setup (_, context) {
     const root = context.root;
@@ -92,6 +96,12 @@ export default defineComponent({
               key: supportedMethodsCodes.PAY_PAL
             };
             break;
+          case 'amazon_payment_v2':
+            availableExpressCheckoutMethods['amazon'] = {
+              is: 'PaymentAmazonPay',
+              key: 'amazon_payment_v2'
+            };
+            break;
           default:
             continue;
         }
@@ -104,18 +114,18 @@ export default defineComponent({
       const browser = Bowser.getParser(windowObj?.navigator.userAgent || '');
       const os = browser.getOS();
 
-      let order: ('apple' | 'paypal' | 'google')[] = [];
+      let order: ('apple' | 'paypal' | 'google' | 'amazon')[] = [];
 
       switch (os.name) {
         case Bowser.OS_MAP.MacOS:
         case Bowser.OS_MAP.iOS:
-          order = ['apple', 'paypal', 'google'];
+          order = ['apple', 'paypal', 'google', 'amazon'];
           break;
         case Bowser.OS_MAP.Android:
-          order = ['google', 'paypal', 'apple'];
+          order = ['google', 'paypal', 'apple', 'amazon'];
           break;
         default:
-          order = ['paypal', 'google', 'apple'];
+          order = ['paypal', 'google', 'apple', 'amazon'];
       }
 
       const sortedPaymentMethods = [];
@@ -160,10 +170,40 @@ export default defineComponent({
       EventBus.$off('order-after-placed', onOrderAfterPlaced);
     });
 
-    const totals = computed<number>(() => {
+    const totals = computed<ExpressCheckoutUpdateData['total']>(() => {
       const totals = root.$store.getters['cart/getTotals'];
 
-      return totals.find((total: {code: string, value: number}) => total.code === 'grand_total').value;
+      const total: ExpressCheckoutUpdateData['total'] = {
+        final: 0,
+        base: 0,
+        tax: 0,
+        shipping: 0,
+        discount: 0
+      };
+
+      for (const item of totals) {
+        if (item.code === 'grand_total') {
+          total.final = item.value;
+        }
+
+        if (item.code === 'subtotal') {
+          total.base = item.value;
+        }
+
+        if (item.code === 'tax') {
+          total.tax = item.value;
+        }
+
+        if (item.code === 'shipping') {
+          total.shipping = item.value;
+        }
+
+        if (item.code === 'discount') {
+          total.discount = item.value;
+        }
+      }
+
+      return total;
     });
 
     const shippingMethods = computed<ExpressCheckoutUpdateData['availableShippingMethods']>(() => {
@@ -218,18 +258,14 @@ export default defineComponent({
 
       if (!selectedShippingMethod) {
         return {
-          total: {
-            final: totals.value
-          },
+          total: totals.value,
           availableShippingMethods: shippingMethods.value,
           selectedShippingMethod: ''
         }
       }
 
       return {
-        total: {
-          final: totals.value
-        },
+        total: totals.value,
         availableShippingMethods: shippingMethods.value,
         selectedShippingMethod: selectedShippingMethod.method_code || ''
       }
@@ -292,8 +328,18 @@ export default defineComponent({
       try {
         registerModule(OrderModule);
 
-        const paymentMethodNonce = root.$store.getters['braintree/paymentMethodNonce'];
-        root.$store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_METHOD_NONCE}`, undefined);
+        const paymentMethod = root.$store.getters['checkout/getPaymentDetails'].paymentMethod;
+        const isAmazonPay = paymentMethod === AmazonPaySupportedMethodCodes.AMAZON_PAY;
+
+        let paymentMethodNonce = '';
+
+        if (!isAmazonPay) {
+          paymentMethodNonce = root.$store.getters['braintree/paymentMethodNonce'];
+          root.$store.commit(`${SN_BRAINTREE}/${SET_PAYMENT_METHOD_NONCE}`, undefined);
+        } else {
+          paymentMethodNonce = root.$store.getters[PAYMENT_NONCE_GETTER];
+          root.$store.commit(CLEAR_PAYMENT_NONCE_MUTATION);
+        }
         await root.$store.dispatch(
           'checkout/placeOrder',
           { order: prepareOrderData({ payment_method_nonce: paymentMethodNonce }) }

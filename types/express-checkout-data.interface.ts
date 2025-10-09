@@ -1,6 +1,8 @@
 import ShippingMethod from '@vue-storefront/core/modules/cart/types/ShippingMethod';
 import supportedMethodsCodes from './SupportedMethodsCodes';
 
+import { SupportedMethodCodes as AmazonPaySupportedMethodCodes } from 'src/modules/vsf-amazon-pay';
+
 export interface MainAddressData {
   country: string,
   city: string,
@@ -23,7 +25,7 @@ export interface ShippingDetailsChangedCallbackData {
 }
 
 export interface ExpressCheckoutAuthorizedCallbackData {
-  paymentMethod: supportedMethodsCodes,
+  paymentMethod: supportedMethodsCodes | AmazonPaySupportedMethodCodes,
   customer: {
     firstName: string,
     lastName: string,
@@ -35,7 +37,11 @@ export interface ExpressCheckoutAuthorizedCallbackData {
 
 export interface ExpressCheckoutUpdateData {
   total: {
-    final: number
+    final: number,
+    base: number,
+    tax: number,
+    shipping: number,
+    discount: number
   },
   availableShippingMethods: ShippingMethod[],
   selectedShippingMethod: string
