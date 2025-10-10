@@ -23,10 +23,14 @@ import { Logger } from '@vue-storefront/core/lib/logger';
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
-import { PAYMENT_ERROR_EVENT, getRegionIdByCountryAndStateCode } from 'src/modules/shared';
+import { ExpressCheckoutData, PAYMENT_ERROR_EVENT, getRegionIdByCountryAndStateCode } from 'src/modules/shared';
 
 import supportedMethodsCodes from '../types/SupportedMethodsCodes';
-import { AdditionalAddressData, ExpressCheckoutAuthorizedCallbackData, MainAddressData, ShippingDetailsChangedCallbackData } from '../types/express-checkout-data.interface';
+
+type AdditionalAddressData = ExpressCheckoutData.AdditionalAddressData;
+type ExpressCheckoutAuthorizedCallbackData = ExpressCheckoutData.ExpressCheckoutAuthorizedCallbackData<supportedMethodsCodes>;
+type MainAddressData = ExpressCheckoutData.MainAddressData;
+type ShippingDetailsChangedCallbackData = ExpressCheckoutData.ShippingDetailsChangedCallbackData
 
 let ApplePaySession: any;
 
