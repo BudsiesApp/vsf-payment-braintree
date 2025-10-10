@@ -18,8 +18,7 @@ import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
 import {
-  AdditionalAddressData,
-  MainAddressData,
+  ExpressCheckoutData,
   getFirstAndLastFromFullName,
   getRegionIdByCountryAndStateCode,
   PAYMENT_ERROR_EVENT,
@@ -29,6 +28,9 @@ import {
 import { Logger } from '@vue-storefront/core/lib/logger';
 
 import supportedMethodsCodes from '../types/SupportedMethodsCodes';
+
+type AdditionalAddressData = ExpressCheckoutData.AdditionalAddressData;
+type MainAddressData = ExpressCheckoutData.MainAddressData;
 
 enum FlowType {
   Vault = 'vault',
