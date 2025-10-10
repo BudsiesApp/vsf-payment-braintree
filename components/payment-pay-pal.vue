@@ -111,7 +111,15 @@ export default PaymentMethod.extend({
         [supportedMethodsCodes.PAY_PAL]: paypal.FUNDING.PAYPAL
       };
 
-      for (const paymentMethod of this.paymentMethods) {
+      const sortedPaymentMethods = [...this.paymentMethods].sort((a, b) => {
+        if (a === supportedMethodsCodes.VENMO && b === supportedMethodsCodes.PAY_PAL) {
+          return 1;
+        }
+
+        return -1;
+      });
+
+      for (const paymentMethod of sortedPaymentMethods) {
         const buttons = await paypal.Buttons({
           onShippingChange: this.onPayPalShippingChange,
           fundingSource: fundingSourcesMapping[paymentMethod],
