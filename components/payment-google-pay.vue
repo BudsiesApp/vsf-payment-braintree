@@ -15,11 +15,14 @@ import config from 'config';
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus';
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
-import { getRegionIdByCountryAndStateCode, PAYMENT_ERROR_EVENT, DEFAULT_CURRENCY_CODE } from 'src/modules/shared';
-import { AdditionalAddressData, ExpressCheckoutAuthorizedCallbackData, MainAddressData, ShippingDetailsChangedCallbackData } from '../types/express-checkout-data.interface';
+import { ExpressCheckoutData, getFirstAndLastFromFullName, getRegionIdByCountryAndStateCode, PAYMENT_ERROR_EVENT, DEFAULT_CURRENCY_CODE } from 'src/modules/shared';
 import supportedMethodsCodes from '../types/SupportedMethodsCodes';
-import { getFirstAndLastFromFullName } from '../helpers/get-first-and-last-from-full-name.function';
 import { Logger } from '@vue-storefront/core/lib/logger';
+
+type AdditionalAddressData = ExpressCheckoutData.AdditionalAddressData;
+type ExpressCheckoutAuthorizedCallbackData = ExpressCheckoutData.ExpressCheckoutAuthorizedCallbackData<supportedMethodsCodes>;
+type MainAddressData = ExpressCheckoutData.MainAddressData;
+type ShippingDetailsChangedCallbackData = ExpressCheckoutData.ShippingDetailsChangedCallbackData
 
 const googlePaySource = 'https://pay.google.com/gp/p/js/pay.js';
 const googlePayScriptId = 'braintree-dropin-google-payment-script';

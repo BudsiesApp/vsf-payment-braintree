@@ -11,6 +11,10 @@ import paypalIcon from './assets/paypal-icon.svg';
 import applePayIcon from './assets/apple-pay-icon.svg';
 import cardsIcon from './assets/cards-icon.png';
 
+import PaymentApplePay from './components/payment-apple-pay.vue';
+import PaymentGooglePay from './components/payment-google-pay.vue';
+import PaymentPayPal from './components/payment-pay-pal.vue';
+
 export const Braintree: StorefrontModule = function ({ app, store }) {
   if (!app.$isServer && !store.hasModule(SN_BRAINTREE)) {
     store.registerModule(SN_BRAINTREE, module);
@@ -68,4 +72,13 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
   }
 }
 
-export { getComponentByMethodCode, supportedMethodsCodes };
+const SET_PAYMENT_METHOD_NONCE_MUTATION = `${SN_BRAINTREE}/${SET_PAYMENT_METHOD_NONCE}`;
+
+export {
+  getComponentByMethodCode,
+  supportedMethodsCodes,
+  PaymentApplePay,
+  PaymentGooglePay,
+  PaymentPayPal,
+  SET_PAYMENT_METHOD_NONCE_MUTATION
+};
