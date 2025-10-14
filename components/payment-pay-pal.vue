@@ -28,6 +28,7 @@ import {
   DEFAULT_CURRENCY_CODE
 } from 'src/modules/shared';
 
+import BraintreeEnvironmentCode from '../types/braintree-environment-code';
 import supportedMethodsCodes, { PaymentMethodCodePayPal as PaymentMethodCode } from '../types/SupportedMethodsCodes';
 
 type AdditionalAddressData = ExpressCheckoutData.AdditionalAddressData;
@@ -74,6 +75,15 @@ export default PaymentMethod.extend({
     }
   },
   methods: {
+    getEnvironment (): BraintreeEnvironmentCode {
+      if (!this.braintreeClient) {
+        return BraintreeEnvironmentCode.SANDBOX;
+      }
+
+      const environment = this.braintreeClient.getConfiguration().gatewayConfiguration.environment;
+
+      return environment === BraintreeEnvironmentCode.PRODUCTION ? BraintreeEnvironmentCode.PRODUCTION : BraintreeEnvironmentCode.SANDBOX;
+    },
     async createPaypalCheckoutInstance (
       braintreeClient: braintree.Client,
       force: boolean = false
@@ -94,7 +104,10 @@ export default PaymentMethod.extend({
 
         if (this.paymentMethods.includes(supportedMethodsCodes.VENMO)) {
           sdkOptions['enable-funding'] = 'venmo';
-          sdkOptions['buyer-country'] = 'US';
+
+          if (this.getEnvironment() === BraintreeEnvironmentCode.SANDBOX) {
+            sdkOptions['buyer-country'] = 'US';
+          }
         }
 
         await this.paypalCheckoutInstance.loadPayPalSDK(sdkOptions);

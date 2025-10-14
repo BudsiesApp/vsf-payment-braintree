@@ -2,6 +2,8 @@ import { StorefrontModule } from '@vue-storefront/core/lib/modules';
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 import PaymentMethod from 'core/modules/cart/types/PaymentMethod';
 
+import { extractCookieValue } from '@vue-storefront/core/helpers';
+
 import { module } from './store'
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from './store/mutation-types';
 import getComponentByMethodCode from './helpers/get-component-by-method-code.function';
@@ -41,6 +43,15 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
     }
 
     const onBeforeReplacePaymentMethods = (methods: PaymentMethod[]) => {
+      const customerCountryCode = extractCookieValue('detected_country', document.cookie);
+
+      if (customerCountryCode !== 'US') {
+        const venmoIndex = methods.findIndex(m => m.code === supportedMethodsCodes.VENMO);
+        if (venmoIndex !== -1) {
+          methods.splice(venmoIndex, 1);
+        }
+      }
+
       methods.forEach((method) => {
         if (!method.code || !Object.values(supportedMethodsCodes).includes(method.code as supportedMethodsCodes)) {
           return;
