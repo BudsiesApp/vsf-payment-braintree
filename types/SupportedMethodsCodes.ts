@@ -10,3 +10,5 @@ enum supportedMethodsCodes {
 }
 
 export default supportedMethodsCodes;
+
+export type PaymentMethodCodePayPal = supportedMethodsCodes.PAY_PAL | supportedMethodsCodes.VENMO;

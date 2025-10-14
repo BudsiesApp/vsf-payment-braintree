@@ -15,11 +15,14 @@ import config from 'config';
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus';
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
-import { getRegionIdByCountryAndStateCode, PAYMENT_ERROR_EVENT, DEFAULT_CURRENCY_CODE } from 'src/modules/shared';
-import { AdditionalAddressData, ExpressCheckoutAuthorizedCallbackData, MainAddressData, ShippingDetailsChangedCallbackData } from '../types/express-checkout-data.interface';
+import { ExpressCheckoutData, getFirstAndLastFromFullName, getRegionIdByCountryAndStateCode, PAYMENT_ERROR_EVENT, DEFAULT_CURRENCY_CODE } from 'src/modules/shared';
 import supportedMethodsCodes from '../types/SupportedMethodsCodes';
-import { getFirstAndLastFromFullName } from '../helpers/get-first-and-last-from-full-name.function';
 import { Logger } from '@vue-storefront/core/lib/logger';
+
+type AdditionalAddressData = ExpressCheckoutData.AdditionalAddressData;
+type ExpressCheckoutAuthorizedCallbackData = ExpressCheckoutData.ExpressCheckoutAuthorizedCallbackData<supportedMethodsCodes>;
+type MainAddressData = ExpressCheckoutData.MainAddressData;
+type ShippingDetailsChangedCallbackData = ExpressCheckoutData.ShippingDetailsChangedCallbackData
 
 const googlePaySource = 'https://pay.google.com/gp/p/js/pay.js';
 const googlePayScriptId = 'braintree-dropin-google-payment-script';
@@ -45,20 +48,29 @@ interface StaticData {
 export default (PaymentMethod as VueConstructor<InstanceType<typeof PaymentMethod> & StaticData>).extend({
   name: 'PaymentGooglePay',
   data () {
-    const expressCheckoutPaymentRequestData: Partial<google.payments.api.PaymentDataRequest> = {
-      emailRequired: true,
-      shippingAddressRequired: true,
-      shippingAddressParameters: {
-        phoneNumberRequired: true
-      } as any,
-      shippingOptionRequired: true,
-      callbackIntents: ['SHIPPING_ADDRESS', 'SHIPPING_OPTION', 'PAYMENT_AUTHORIZATION']
-    };
-
     return {
       googlePayCheckoutInstance: undefined as undefined | GooglePayment,
-      isGooglePayAvailable: false,
-      expressCheckoutPaymentRequestData
+      isGooglePayAvailable: false
+    }
+  },
+  computed: {
+    expressCheckoutPaymentRequestData (): Partial<google.payments.api.PaymentDataRequest> {
+      const isShippingOptionRequired = !this.$store.getters['cart/isVirtualCart'];
+      const callbackIntents: google.payments.api.CallbackIntent[] = ['SHIPPING_ADDRESS', 'PAYMENT_AUTHORIZATION']
+
+      if (isShippingOptionRequired) {
+        callbackIntents.push('SHIPPING_OPTION');
+      }
+
+      return {
+        emailRequired: true,
+        shippingAddressRequired: true,
+        shippingAddressParameters: {
+          phoneNumberRequired: true
+        } as any,
+        shippingOptionRequired: isShippingOptionRequired,
+        callbackIntents
+      };
     }
   },
   async created (): Promise<void> {

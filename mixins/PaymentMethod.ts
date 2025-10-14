@@ -3,10 +3,13 @@ import { currentStoreView } from '@vue-storefront/core/lib/multistore';
 import PaymentDetails from '@vue-storefront/core/modules/checkout/types/PaymentDetails';
 import Vue, { PropType, VueConstructor } from 'vue';
 
-import { InjectType } from 'src/modules/shared';
+import { ExpressCheckoutData, InjectType, PaymentType } from 'src/modules/shared';
 
-import { PaymentType } from '../types/payment-type';
-import { ExpressCheckoutAuthorizedCallbackData, ExpressCheckoutUpdateData, ShippingDetailsChangedCallbackData } from '../types/express-checkout-data.interface';
+import supportedMethodsCodes from '../types/SupportedMethodsCodes';
+
+type ExpressCheckoutAuthorizedCallbackData = ExpressCheckoutData.ExpressCheckoutAuthorizedCallbackData<supportedMethodsCodes>;
+type ExpressCheckoutUpdateData = ExpressCheckoutData.ExpressCheckoutUpdateData;
+type ShippingDetailsChangedCallbackData = ExpressCheckoutData.ShippingDetailsChangedCallbackData;
 
 interface InjectedServices {
   window: Window & typeof window

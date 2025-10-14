@@ -20,11 +20,18 @@ import { Logger } from '@vue-storefront/core/lib/logger';
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
-import { getRegionIdByCountryAndStateCode, PAYMENT_ERROR_EVENT, DEFAULT_CURRENCY_CODE } from 'src/modules/shared';
+import {
+  ExpressCheckoutData,
+  getFirstAndLastFromFullName,
+  getRegionIdByCountryAndStateCode,
+  PAYMENT_ERROR_EVENT,
+  DEFAULT_CURRENCY_CODE
+} from 'src/modules/shared';
 
-import { AdditionalAddressData, MainAddressData } from '../types/express-checkout-data.interface';
-import { getFirstAndLastFromFullName } from '../helpers/get-first-and-last-from-full-name.function';
-import supportedMethodsCodes from '../types/SupportedMethodsCodes';
+import supportedMethodsCodes, { PaymentMethodCodePayPal as PaymentMethodCode } from '../types/SupportedMethodsCodes';
+
+type AdditionalAddressData = ExpressCheckoutData.AdditionalAddressData;
+type MainAddressData = ExpressCheckoutData.MainAddressData;
 
 enum FlowType {
   Vault = 'vault',
@@ -36,8 +43,6 @@ enum Intent {
   Order = 'order',
   Capture = 'capture'
 }
-
-export type PaymentMethodCode = supportedMethodsCodes.PAY_PAL | supportedMethodsCodes.VENMO;
 
 export default PaymentMethod.extend({
   name: 'PaymentPayPal',
