@@ -296,8 +296,12 @@ export default PaymentMethod.extend({
       }
     },
     paymentMethods: {
-      handler () {
+      handler (val: PaymentMethodCode[], oldVal: PaymentMethodCode[]) {
         if (!this.braintreeClient) {
+          return;
+        }
+
+        if (JSON.stringify(val) === JSON.stringify(oldVal)) {
           return;
         }
 
