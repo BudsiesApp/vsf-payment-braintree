@@ -11,9 +11,12 @@
 </template>
 
 <script lang="ts">
+import { PropType } from 'vue';
 import { PayPalCheckoutCreatePaymentOptions } from 'braintree-web';
 import paypalCheckout, { PayPalCheckoutTokenizationOptions, ShippingOptionType } from 'braintree-web/dist/browser/paypal-checkout';
+import { PayPalCheckoutLoadPayPalSDKOptions } from 'braintree-web/paypal-checkout';
 
+import { Logger } from '@vue-storefront/core/lib/logger';
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
@@ -25,9 +28,7 @@ import {
   DEFAULT_CURRENCY_CODE
 } from 'src/modules/shared';
 
-import { Logger } from '@vue-storefront/core/lib/logger';
-
-import supportedMethodsCodes from '../types/SupportedMethodsCodes';
+import supportedMethodsCodes, { PaymentMethodCodePayPal as PaymentMethodCode } from '../types/SupportedMethodsCodes';
 
 type AdditionalAddressData = ExpressCheckoutData.AdditionalAddressData;
 type MainAddressData = ExpressCheckoutData.MainAddressData;
@@ -49,6 +50,10 @@ export default PaymentMethod.extend({
     isOrderPlacementDisabled: {
       type: Boolean,
       default: false
+    },
+    paymentMethods: {
+      type: Array as PropType<PaymentMethodCode[]>,
+      required: true
     }
   },
   data () {
@@ -69,8 +74,11 @@ export default PaymentMethod.extend({
     }
   },
   methods: {
-    async createPaypalCheckoutInstance (braintreeClient: braintree.Client): Promise<void> {
-      if (this.paypalCheckoutInstance) {
+    async createPaypalCheckoutInstance (
+      braintreeClient: braintree.Client,
+      force: boolean = false
+    ): Promise<void> {
+      if (this.paypalCheckoutInstance && !force) {
         return;
       }
 
@@ -79,10 +87,17 @@ export default PaymentMethod.extend({
           client: braintreeClient
         });
 
-        await this.paypalCheckoutInstance.loadPayPalSDK({
+        const sdkOptions: PayPalCheckoutLoadPayPalSDKOptions = {
           currency: this.currency,
           intent: 'capture'
-        });
+        };
+
+        if (this.paymentMethods.includes(supportedMethodsCodes.VENMO)) {
+          sdkOptions['enable-funding'] = 'venmo';
+          sdkOptions['buyer-country'] = 'US';
+        }
+
+        await this.paypalCheckoutInstance.loadPayPalSDK(sdkOptions);
 
         await this.onPayPalSdkLoaded();
       } catch (error) {
@@ -96,21 +111,36 @@ export default PaymentMethod.extend({
         return;
       }
 
-      const buttons = await paypal.Buttons({
-        onShippingChange: this.onPayPalShippingChange,
-        fundingSource: paypal.FUNDING.PAYPAL,
-        style: {
-          label: this.isExpressCheckout ? 'checkout' : 'pay',
-          color: 'blue',
-          height: 40,
-          disableMaxWidth: true
-        },
-        createOrder: this.onPayPalCreateOrder,
-        onApprove: this.onPayPalApprove,
-        onError: this.onPayPalError
+      const fundingSourcesMapping: Record<PaymentMethodCode, paypal.FUNDING> = {
+        [supportedMethodsCodes.VENMO]: paypal.FUNDING.VENMO,
+        [supportedMethodsCodes.PAY_PAL]: paypal.FUNDING.PAYPAL
+      };
+
+      const sortedPaymentMethods = [...this.paymentMethods].sort((a, b) => {
+        if (a === supportedMethodsCodes.VENMO && b === supportedMethodsCodes.PAY_PAL) {
+          return 1;
+        }
+
+        return -1;
       });
 
-      buttons.render('#pay-pal-button-container');
+      for (const paymentMethod of sortedPaymentMethods) {
+        const buttons = await paypal.Buttons({
+          onShippingChange: this.onPayPalShippingChange,
+          fundingSource: fundingSourcesMapping[paymentMethod],
+          style: {
+            label: this.isExpressCheckout ? 'checkout' : 'pay',
+            color: 'blue',
+            height: 40,
+            disableMaxWidth: true
+          },
+          createOrder: this.onPayPalCreateOrder,
+          onApprove: (data: PayPalCheckoutTokenizationOptions) => this.onPayPalApprove(data, paymentMethod),
+          onError: this.onPayPalError
+        });
+
+        buttons.render('#pay-pal-button-container');
+      }
     },
     async onPayPalShippingChange (data: any, actions: any) {
       if (!this.isExpressCheckout) {
@@ -195,7 +225,7 @@ export default PaymentMethod.extend({
 
       return this.paypalCheckoutInstance.createPayment(paymentData);
     },
-    async onPayPalApprove (data: PayPalCheckoutTokenizationOptions): Promise<void> {
+    async onPayPalApprove (data: PayPalCheckoutTokenizationOptions, paymentMethod: PaymentMethodCode): Promise<void> {
       if (!this.paypalCheckoutInstance) {
         throw new Error('paypalCheckoutInstance is not defined')
       }
@@ -233,7 +263,7 @@ export default PaymentMethod.extend({
 
         await this.onExpressCheckoutAuthorized(
           {
-            paymentMethod: supportedMethodsCodes.PAY_PAL,
+            paymentMethod,
             customer: {
               firstName: details.firstName,
               lastName: details.lastName,
@@ -264,6 +294,19 @@ export default PaymentMethod.extend({
 
         this.createPaypalCheckoutInstance(val);
       }
+    },
+    paymentMethods: {
+      handler (val: PaymentMethodCode[], oldVal: PaymentMethodCode[]) {
+        if (!this.braintreeClient) {
+          return;
+        }
+
+        if (JSON.stringify(val) === JSON.stringify(oldVal)) {
+          return;
+        }
+
+        this.createPaypalCheckoutInstance(this.braintreeClient, true);
+      }
     }
   }
 })
@@ -274,11 +317,13 @@ export default PaymentMethod.extend({
 
 .payment-pay-pal {
   ._pay-pal-button-container {
-      display: flex;
-      margin: var(--spacer-sm) 0;
-      justify-content: center;
-      align-items: center;
-      padding: 0;
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--payment-pay-pal-buttons-gap, var(--spacer-sm));
+    margin: var(--spacer-sm) 0;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
   }
 
   &.-express-checkout {

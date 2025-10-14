@@ -5,10 +5,11 @@ import PaymentMethod from 'core/modules/cart/types/PaymentMethod';
 import { module } from './store'
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from './store/mutation-types';
 import getComponentByMethodCode from './helpers/get-component-by-method-code.function';
-import supportedMethodsCodes from './types/SupportedMethodsCodes';
+import supportedMethodsCodes, { PaymentMethodCodePayPal } from './types/SupportedMethodsCodes';
 import googlePayIcon from './assets/google-pay-mark.svg';
 import paypalIcon from './assets/paypal-icon.svg';
 import applePayIcon from './assets/apple-pay-icon.svg';
+import venmoIcon from './assets/venmo-icon.svg';
 import cardsIcon from './assets/cards-icon.png';
 
 import PaymentApplePay from './components/payment-apple-pay.vue';
@@ -51,6 +52,10 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
             method.hint = app.$t('You will complete your payment via PayPal. After You will make payment, order will be automatically placed').toString();
             method.icon = paypalIcon;
             break;
+          case supportedMethodsCodes.VENMO:
+            method.hint = app.$t('You will complete your payment via Venmo. After You will make payment, order will be automatically placed').toString();
+            method.icon = venmoIcon;
+            break;
           case supportedMethodsCodes.APPLE_PAY:
           case supportedMethodsCodes.MAGENTO1_APPLE_PAY:
             method.hint = app.$t('You will be presented with Apple Pay at the end of the checkout process').toString();
@@ -82,3 +87,5 @@ export {
   PaymentPayPal,
   SET_PAYMENT_METHOD_NONCE_MUTATION
 };
+
+export type { PaymentMethodCodePayPal };

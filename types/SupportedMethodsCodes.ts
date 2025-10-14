@@ -5,7 +5,10 @@ enum supportedMethodsCodes {
   APPLE_PAY = 'braintree_applepay',
   MAGENTO1_CARD = 'gene_braintree_creditcard',
   CARD = 'braintree',
-  GOOGLE_PAY = 'braintree_googlepay'
+  GOOGLE_PAY = 'braintree_googlepay',
+  VENMO = 'braintree_venmo'
 }
 
 export default supportedMethodsCodes;
+
+export type PaymentMethodCodePayPal = supportedMethodsCodes.PAY_PAL | supportedMethodsCodes.VENMO;
