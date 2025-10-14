@@ -37,7 +37,7 @@ enum Intent {
   Capture = 'capture'
 }
 
-export type PaymentMethod = supportedMethodsCodes.PAY_PAL | supportedMethodsCodes.VENMO;
+export type PaymentMethodCode = supportedMethodsCodes.PAY_PAL | supportedMethodsCodes.VENMO;
 
 export default PaymentMethod.extend({
   name: 'PaymentPayPal',
@@ -47,7 +47,7 @@ export default PaymentMethod.extend({
       default: false
     },
     paymentMethods: {
-      type: Array as PropType<PaymentMethod[]>,
+      type: Array as PropType<PaymentMethodCode[]>,
       required: true
     }
   },
@@ -106,7 +106,7 @@ export default PaymentMethod.extend({
         return;
       }
 
-      const fundingSourcesMapping: Record<PaymentMethod, paypal.FUNDING> = {
+      const fundingSourcesMapping: Record<PaymentMethodCode, paypal.FUNDING> = {
         [supportedMethodsCodes.VENMO]: paypal.FUNDING.VENMO,
         [supportedMethodsCodes.PAY_PAL]: paypal.FUNDING.PAYPAL
       };
@@ -220,7 +220,7 @@ export default PaymentMethod.extend({
 
       return this.paypalCheckoutInstance.createPayment(paymentData);
     },
-    async onPayPalApprove (data: PayPalCheckoutTokenizationOptions, paymentMethod: PaymentMethod): Promise<void> {
+    async onPayPalApprove (data: PayPalCheckoutTokenizationOptions, paymentMethod: PaymentMethodCode): Promise<void> {
       if (!this.paypalCheckoutInstance) {
         throw new Error('paypalCheckoutInstance is not defined')
       }

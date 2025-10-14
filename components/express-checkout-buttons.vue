@@ -38,7 +38,7 @@ import { registerModule } from '@vue-storefront/core/lib/modules';
 import { OrderModule } from '@vue-storefront/core/modules/order';
 import { CHECKOUT_UPDATE_SHIPPING_DETAILS_MUTATION, CHECKOUT_UPDATE_PAYMENT_DETAILS_MUTATION, useOrderCreation, CHECKOUT_UPDATE_SUCCESS_ORDER_DATA_MUTATION } from '@vue-storefront/core/modules/checkout';
 import PaymentApplePay from 'src/modules/payment-braintree/components/payment-apple-pay.vue';
-import PaymentPayPal, { PaymentMethod as PayPalPaymentMethod } from 'src/modules/payment-braintree/components/payment-pay-pal.vue';
+import PaymentPayPal, { PaymentMethodCode as PayPalPaymentMethodCode } from 'src/modules/payment-braintree/components/payment-pay-pal.vue';
 import PaymentGooglePay from 'src/modules/payment-braintree/components/payment-google-pay.vue';
 import { CartEvents, createPhoneHelpers, PAYMENT_ERROR_EVENT } from 'src/modules/shared';
 
@@ -73,7 +73,7 @@ export default defineComponent({
     const availableExpressCheckoutMethods = computed<Record<string, ExpressCheckoutMethod>>(() => {
       const availablePaymentMethods = root.$store.getters['checkout/getPaymentMethods'];
       const availableExpressCheckoutMethods: Record<string, ExpressCheckoutMethod> = {};
-      const payPalPaymentMethods: PayPalPaymentMethod[] = [];
+      const payPalPaymentMethods: PayPalPaymentMethodCode[] = [];
 
       for (const method of availablePaymentMethods) {
         switch (method.code) {
