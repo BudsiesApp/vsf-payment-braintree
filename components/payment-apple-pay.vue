@@ -287,11 +287,11 @@ export default PaymentMethod.extend({
 
 <style lang="scss" scoped>
 .payment-apple-pay {
-  display: flex;
-
   ._express-checkout-button {
     --apple-pay-button-width: 100%;
     --apple-pay-button-height: 40px;
+
+    display: block;
   }
 }
 </style>
