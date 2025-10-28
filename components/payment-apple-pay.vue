@@ -189,6 +189,7 @@ export default PaymentMethod.extend({
 
       session.onvalidatemerchant = (event: any) => this.onValidateMerchant(event, session);
       session.onpaymentauthorized = (event: any) => this.onPaymentAuthorized(event, session);
+      session.oncancel = () => this.$emit('cancelled');
       session.begin();
       this.$emit('payment-started');
     },

@@ -303,6 +303,7 @@ export default (PaymentMethod as VueConstructor<InstanceType<typeof PaymentMetho
         this.$emit('success');
       } catch (error) {
         if ((error as any).name === ABORT_PAYMENT_ERROR_NAME) {
+          this.$emit('cancelled');
           return;
         }
 

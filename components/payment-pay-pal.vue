@@ -250,8 +250,8 @@ export default PaymentMethod.extend({
         EventBus.$emit(PAYMENT_ERROR_EVENT);
       }
     },
-    onPayPalError (): void {
-      Logger.error('Error during payment processing', 'pay-pal')();
+    onPayPalError (error: any): void {
+      Logger.error('Error during payment processing: ' + error, 'pay-pal')();
       EventBus.$emit(PAYMENT_ERROR_EVENT);
     }
   },
