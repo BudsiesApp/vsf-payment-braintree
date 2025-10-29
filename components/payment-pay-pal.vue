@@ -43,6 +43,8 @@ enum Intent {
   Capture = 'capture'
 }
 
+const POPUP_CLOSED_ERROR = 'Window is closed, can not determine type';
+
 export default PaymentMethod.extend({
   name: 'PaymentPayPal',
   props: {
@@ -53,7 +55,8 @@ export default PaymentMethod.extend({
   },
   data () {
     return {
-      paypalCheckoutInstance: undefined as braintree.PayPalCheckout | undefined
+      paypalCheckoutInstance: undefined as braintree.PayPalCheckout | undefined,
+      isCancelled: false
     }
   },
   created (): void {
@@ -107,7 +110,8 @@ export default PaymentMethod.extend({
         },
         createOrder: this.onPayPalCreateOrder,
         onApprove: this.onPayPalApprove,
-        onError: this.onPayPalError
+        onError: this.onPayPalError,
+        onCancel: this.onPayPalCancel
       });
 
       buttons.render('#pay-pal-button-container');
@@ -193,6 +197,8 @@ export default PaymentMethod.extend({
 
       this.$emit('payment-started');
 
+      this.isCancelled = false;
+
       return this.paypalCheckoutInstance.createPayment(paymentData);
     },
     async onPayPalApprove (data: PayPalCheckoutTokenizationOptions): Promise<void> {
@@ -251,8 +257,18 @@ export default PaymentMethod.extend({
       }
     },
     onPayPalError (error: any): void {
-      Logger.error('Error during payment processing: ' + error, 'pay-pal')();
+      const isPopupClosedError = error.message.includes(POPUP_CLOSED_ERROR);
+
+      if (this.isCancelled || isPopupClosedError) {
+        return;
+      }
+
+      Logger.error('Error during payment processing: ' + error.message, 'pay-pal')();
+
       EventBus.$emit(PAYMENT_ERROR_EVENT);
+    },
+    onPayPalCancel (): void {
+      this.isCancelled = true;
     }
   },
   watch: {
