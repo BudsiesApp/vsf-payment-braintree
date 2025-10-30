@@ -16,7 +16,6 @@ import { PayPalCheckoutCreatePaymentOptions } from 'braintree-web';
 import paypalCheckout, { PayPalCheckoutTokenizationOptions, ShippingOptionType } from 'braintree-web/dist/browser/paypal-checkout';
 import { PayPalCheckoutLoadPayPalSDKOptions } from 'braintree-web/paypal-checkout';
 
-import { Logger } from '@vue-storefront/core/lib/logger';
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from 'src/modules/payment-braintree/store/mutation-types';
@@ -102,9 +101,9 @@ export default PaymentMethod.extend({
           intent: 'capture'
         };
 
-        if (this.paymentMethods.includes(supportedMethodsCodes.VENMO)) {
-          sdkOptions['enable-funding'] = 'venmo';
+        sdkOptions['enable-funding'] = 'venmo';
 
+        if (this.paymentMethods.includes(supportedMethodsCodes.VENMO)) {
           if (this.getEnvironment() === BraintreeEnvironmentCode.SANDBOX) {
             sdkOptions['buyer-country'] = 'US';
           }
@@ -114,7 +113,7 @@ export default PaymentMethod.extend({
 
         await this.onPayPalSdkLoaded();
       } catch (error) {
-        Logger.error('Checkout instance creation error: ' + error, 'pay-pal')();
+        console.error('Checkout instance creation error: ' + error);
         EventBus.$emit(PAYMENT_ERROR_EVENT);
       }
     },
@@ -138,7 +137,7 @@ export default PaymentMethod.extend({
       });
 
       for (const paymentMethod of sortedPaymentMethods) {
-        const buttons = await paypal.Buttons({
+        const button = await paypal.Buttons({
           onShippingChange: this.onPayPalShippingChange,
           fundingSource: fundingSourcesMapping[paymentMethod],
           style: {
@@ -152,7 +151,11 @@ export default PaymentMethod.extend({
           onError: this.onPayPalError
         });
 
-        buttons.render('#pay-pal-button-container');
+        if (!button.isEligible()) {
+          return;
+        }
+
+        button.render('#pay-pal-button-container');
       }
     },
     async onPayPalShippingChange (data: any, actions: any) {
@@ -289,12 +292,12 @@ export default PaymentMethod.extend({
 
         this.$emit('success');
       } catch (error) {
-        Logger.error('Error during payment authorization: ' + error, 'pay-pal')();
+        console.error('Error during payment authorization: ' + error);
         EventBus.$emit(PAYMENT_ERROR_EVENT);
       }
     },
-    onPayPalError (): void {
-      Logger.error('Error during payment processing', 'pay-pal')();
+    onPayPalError (error: Error): void {
+      console.error('Error during payment processing: ' + error);
       EventBus.$emit(PAYMENT_ERROR_EVENT);
     }
   },
