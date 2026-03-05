@@ -6,7 +6,6 @@ import { module } from './store'
 import { SET_PAYMENT_METHOD_NONCE, SN_BRAINTREE } from './store/mutation-types';
 import getComponentByMethodCode from './helpers/get-component-by-method-code.function';
 import supportedMethodsCodes from './types/SupportedMethodsCodes';
-import registerStoryblokComponents from './components/storyblok';
 import googlePayIcon from './assets/google-pay-mark.svg';
 import paypalIcon from './assets/paypal-icon.svg';
 import applePayIcon from './assets/apple-pay-icon.svg';
@@ -17,8 +16,6 @@ import PaymentGooglePay from './components/payment-google-pay.vue';
 import PaymentPayPal from './components/payment-pay-pal.vue';
 
 export const Braintree: StorefrontModule = function ({ app, store }) {
-  registerStoryblokComponents();
-
   if (!app.$isServer && !store.hasModule(SN_BRAINTREE)) {
     store.registerModule(SN_BRAINTREE, module);
     store.dispatch('braintree/createBraintreeClient');
