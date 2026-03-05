@@ -84,7 +84,9 @@ export default PaymentMethod.extend({
 
         await this.paypalCheckoutInstance.loadPayPalSDK({
           currency: this.currency,
-          intent: 'capture'
+          components: 'buttons,messages',
+          intent: 'capture',
+          'enable-funding': 'paylater'
         });
 
         await this.onPayPalSdkLoaded();
@@ -99,22 +101,27 @@ export default PaymentMethod.extend({
         return;
       }
 
-      const buttons = await paypal.Buttons({
-        onShippingChange: this.onPayPalShippingChange,
-        fundingSource: paypal.FUNDING.PAYPAL,
-        style: {
-          label: this.isExpressCheckout ? 'checkout' : 'pay',
-          color: 'blue',
-          height: 40,
-          disableMaxWidth: true
-        },
-        createOrder: this.onPayPalCreateOrder,
-        onApprove: this.onPayPalApprove,
-        onError: this.onPayPalError,
-        onCancel: this.onPayPalCancel
-      });
+      for (const paymentMethod of [paypal.FUNDING.PAYPAL, paypal.FUNDING.PAYLATER]) {
+        const button = await paypal.Buttons({
+          onShippingChange: this.onPayPalShippingChange,
+          fundingSource: paymentMethod,
+          style: {
+            label: this.isExpressCheckout ? 'checkout' : 'pay',
+            color: 'blue',
+            height: 40,
+            disableMaxWidth: true
+          },
+          createOrder: this.onPayPalCreateOrder,
+          onApprove: this.onPayPalApprove,
+          onError: this.onPayPalError
+        });
 
-      buttons.render('#pay-pal-button-container');
+        if (!button.isEligible()) {
+          return;
+        }
+
+        button.render('#pay-pal-button-container');
+      }
     },
     async onPayPalShippingChange (data: any, actions: any) {
       if (!this.isExpressCheckout) {
