@@ -10,7 +10,10 @@ export const module: Module<BraintreeState, any> = {
     trans: [],
     paymentMethodNonce: undefined,
     braintreeClient: undefined,
-    expirationDate: Date.now()
+    expirationDate: Date.now(),
+    paypalCheckoutInstance: undefined,
+    paypalSdkLoadPromise: undefined,
+    isPayPalSdkLoaded: false
   },
   mutations,
   actions,
