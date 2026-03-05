@@ -3,5 +3,6 @@ import { GetterTree } from 'vuex';
 
 export const getters: GetterTree<BraintreeState, any> = {
   paymentMethodNonce: (state) => state.paymentMethodNonce,
-  braintreeClient: (state) => state.braintreeClient
+  braintreeClient: (state) => state.braintreeClient,
+  paypalCheckoutInstance: (state) => state.paypalCheckoutInstance
 }
