@@ -97,7 +97,6 @@ export default PaymentMethod.extend({
             label: this.isExpressCheckout ? 'checkout' : 'pay',
             color: 'blue',
             height: 40,
-            layout: 'vertical',
             disableMaxWidth: true
           },
           createOrder: this.onPayPalCreateOrder,
@@ -287,6 +286,8 @@ export default PaymentMethod.extend({
 .payment-pay-pal {
   ._pay-pal-button-container {
       display: flex;
+      flex-direction: column;
+      gap: var(--spacer-sm);
       margin: var(--spacer-sm) 0;
       justify-content: center;
       align-items: center;
