@@ -64,7 +64,25 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
             method.icon = googlePayIcon;
             break;
         }
-      })
+      });
+
+      const payPalPayLaterData: PaymentMethod = {
+        default: false,
+        code: supportedMethodsCodes.PAY_PAL_PAY_LATER,
+        icon: paypalIcon,
+        title: 'PayPal Pay Later',
+        hint: app.$t('You will complete your payment via PayPal. After You will make payment, order will be automatically placed').toString()
+      };
+
+      let existingPayLaterMethodIndex = methods.findIndex((method) => method.code === supportedMethodsCodes.PAY_PAL_PAY_LATER);
+      let regularPayPalMethodIndex = methods.findIndex((method) => method.code === supportedMethodsCodes.PAY_PAL);
+
+      if (regularPayPalMethodIndex < 0) {
+        return;
+      }
+
+      methods.splice(existingPayLaterMethodIndex, 1);
+      methods.splice(regularPayPalMethodIndex + 1, 0, { ...payPalPayLaterData });
     };
 
     EventBus.$on('checkout-before-placeOrder', invokePlaceOrder);

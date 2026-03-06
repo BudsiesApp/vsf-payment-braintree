@@ -11,6 +11,7 @@
 </template>
 
 <script lang="ts">
+import { PropType } from 'vue';
 import { PayPalCheckoutCreatePaymentOptions } from 'braintree-web';
 import { PayPalCheckoutTokenizationOptions, ShippingOptionType } from 'braintree-web/dist/browser/paypal-checkout';
 
@@ -51,11 +52,18 @@ export default PaymentMethod.extend({
     isOrderPlacementDisabled: {
       type: Boolean,
       default: false
+    },
+    fundingSources: {
+      type: Array as PropType<paypal.FUNDING[]> | undefined,
+      default: undefined
     }
   },
   data () {
+    const renderedButtonByFundingSource: Record<paypal.FUNDING, any> = {};
+
     return {
-      isCancelled: false
+      isCancelled: false,
+      renderedButtonByFundingSource
     }
   },
   created (): void {
@@ -89,7 +97,13 @@ export default PaymentMethod.extend({
         return;
       }
 
-      for (const paymentMethod of [paypal.FUNDING.PAYPAL, paypal.FUNDING.PAYLATER]) {
+      const fundingSources = this.fundingSources ? this.fundingSources : [paypal.FUNDING.PAYPAL, paypal.FUNDING.PAYLATER];
+
+      for (const item of Object.values(this.renderedButtonByFundingSource)) {
+        (item as any).close();
+      }
+
+      for (const paymentMethod of fundingSources) {
         const button = await paypal.Buttons({
           onShippingChange: this.onPayPalShippingChange,
           fundingSource: paymentMethod,
@@ -107,6 +121,8 @@ export default PaymentMethod.extend({
         if (!button.isEligible()) {
           continue;
         }
+
+        this.renderedButtonByFundingSource[paymentMethod] = button;
 
         button.render('#pay-pal-button-container');
       }
@@ -273,6 +289,11 @@ export default PaymentMethod.extend({
           return;
         }
 
+        this.createPaypalCheckoutInstance();
+      }
+    },
+    fundingSources: {
+      handler () {
         this.createPaypalCheckoutInstance();
       }
     }
