@@ -81,7 +81,10 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
         return;
       }
 
-      methods.splice(existingPayLaterMethodIndex, 1);
+      if (existingPayLaterMethodIndex >= 0) {
+        methods.splice(existingPayLaterMethodIndex, 1);
+      }
+
       methods.splice(regularPayPalMethodIndex + 1, 0, { ...payPalPayLaterData });
     };
 
