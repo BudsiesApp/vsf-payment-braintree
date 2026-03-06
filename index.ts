@@ -14,6 +14,7 @@ import cardsIcon from './assets/cards-icon.png';
 import PaymentApplePay from './components/payment-apple-pay.vue';
 import PaymentGooglePay from './components/payment-google-pay.vue';
 import PaymentPayPal from './components/payment-pay-pal.vue';
+import PayPalPayLaterMessage from './components/PayPalPayLaterMessaging.vue';
 
 export const Braintree: StorefrontModule = function ({ app, store }) {
   if (!app.$isServer && !store.hasModule(SN_BRAINTREE)) {
@@ -101,5 +102,6 @@ export {
   PaymentApplePay,
   PaymentGooglePay,
   PaymentPayPal,
+  PayPalPayLaterMessage,
   SET_PAYMENT_METHOD_NONCE_MUTATION
 };
