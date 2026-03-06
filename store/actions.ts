@@ -7,7 +7,7 @@ import { adjustMultistoreApiUrl } from '@vue-storefront/core/lib/multistore'
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 
 import { BraintreeState } from '../types/BraintreeState'
-import { BEFORE_STORE_BACKEND_API_REQUEST } from 'src/modules/shared';
+import { BEFORE_STORE_BACKEND_API_REQUEST, DEFAULT_CURRENCY_CODE } from 'src/modules/shared';
 import {
   SET_BRAINTREE_CLIENT,
   SET_BRAINTREE_CLIENT_CREATION_PROMISE,
@@ -128,10 +128,7 @@ export const actions: ActionTree<BraintreeState, any> = {
 
     return promise;
   },
-  async ensurePayPalSdkLoaded (
-    { state, commit, dispatch },
-    { currency }: { currency?: string } = {}
-  ): Promise<void> {
+  async ensurePayPalSdkLoaded ({ state, commit, dispatch }): Promise<void> {
     if (isServer) {
       return;
     }
@@ -156,7 +153,7 @@ export const actions: ActionTree<BraintreeState, any> = {
         }
 
         await checkoutInstance.loadPayPalSDK({
-          currency,
+          currency: DEFAULT_CURRENCY_CODE,
           components: 'buttons,messages',
           intent: 'capture',
           'enable-funding': 'paylater'

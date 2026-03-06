@@ -84,7 +84,7 @@ export default PaymentMethod.extend({
   methods: {
     async createPaypalCheckoutInstance (): Promise<void> {
       try {
-        await this.$store.dispatch('braintree/ensurePayPalSdkLoaded', { currency: this.currency });
+        await this.$store.dispatch('braintree/ensurePayPalSdkLoaded');
         await this.onPayPalSdkLoaded();
       } catch (error) {
         Logger.error('Checkout instance creation error: ' + error, 'pay-pal')();
@@ -115,7 +115,8 @@ export default PaymentMethod.extend({
           },
           createOrder: this.onPayPalCreateOrder,
           onApprove: this.onPayPalApprove,
-          onError: this.onPayPalError
+          onError: this.onPayPalError,
+          onCancel: this.onPayPalCancel
         });
 
         if (!button.isEligible()) {

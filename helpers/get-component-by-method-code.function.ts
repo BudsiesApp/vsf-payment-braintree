@@ -9,9 +9,6 @@ import PaymentPayPal from '../components/payment-pay-pal.vue';
 
 export default function getComponentByMethodCode (methodCode: string): Component | undefined {
   switch (methodCode) {
-    // case supportedMethodsCodes.PAY_PAL:
-    // case supportedMethodsCodes.MAGENTO1_PAY_PAL:
-    //   return PaymentPayPal;
     case supportedMethodsCodes.CARD:
     case supportedMethodsCodes.MAGENTO1_CARD:
       return PaymentCard;
