@@ -1,6 +1,6 @@
 <template>
   <div
-    class="pay-pal-pay-later-messaging"
+    class="pay-pal-pay-later-message"
     data-pp-message
     :data-pp-placement="placement"
     :data-pp-amount="amount"
@@ -18,7 +18,7 @@ type PayPalMessagePlacement = 'product' | 'cart' | 'checkout' | 'home' | 'catego
 type Alignment = 'left' | 'center' | 'right';
 
 export default Vue.extend({
-  name: 'PayPalPayLaterMessaging',
+  name: 'PayPalPayLaterMessage',
   props: {
     amount: {
       type: Number,
@@ -45,7 +45,7 @@ export default Vue.extend({
       try {
         await this.$store.dispatch('braintree/ensurePayPalSdkLoaded');
       } catch (error) {
-        Logger.error('PayPalPayLaterMessaging: SDK load error: ' + error, 'pay-pal-pay-later-messaging')();
+        Logger.error('PayPalPayLaterMessage: SDK load error: ' + error, 'pay-pal-pay-later-message')();
       }
     }
   }
