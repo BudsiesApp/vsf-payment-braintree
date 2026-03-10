@@ -86,7 +86,7 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
         methods.splice(existingPayLaterMethodIndex, 1);
       }
 
-      methods.splice(regularPayPalMethodIndex + 1, 0, { ...payPalPayLaterData });
+      methods.splice(regularPayPalMethodIndex, 0, { ...payPalPayLaterData });
     };
 
     EventBus.$on('checkout-before-placeOrder', invokePlaceOrder);
