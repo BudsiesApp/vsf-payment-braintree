@@ -14,6 +14,7 @@ import cardsIcon from './assets/cards-icon.png';
 import PaymentApplePay from './components/payment-apple-pay.vue';
 import PaymentGooglePay from './components/payment-google-pay.vue';
 import PaymentPayPal from './components/payment-pay-pal.vue';
+import PayPalPayLaterMessage from './components/PayPalPayLaterMessage.vue';
 
 export const Braintree: StorefrontModule = function ({ app, store }) {
   if (!app.$isServer && !store.hasModule(SN_BRAINTREE)) {
@@ -64,7 +65,28 @@ export const Braintree: StorefrontModule = function ({ app, store }) {
             method.icon = googlePayIcon;
             break;
         }
-      })
+      });
+
+      const payPalPayLaterData: PaymentMethod = {
+        default: false,
+        code: supportedMethodsCodes.PAY_PAL_PAY_LATER,
+        icon: paypalIcon,
+        title: 'PayPal Pay Later',
+        hint: app.$t('You will complete your payment via PayPal. After You will make payment, order will be automatically placed').toString()
+      };
+
+      let existingPayLaterMethodIndex = methods.findIndex((method) => method.code === supportedMethodsCodes.PAY_PAL_PAY_LATER);
+      let regularPayPalMethodIndex = methods.findIndex((method) => method.code === supportedMethodsCodes.PAY_PAL);
+
+      if (regularPayPalMethodIndex < 0) {
+        return;
+      }
+
+      if (existingPayLaterMethodIndex >= 0) {
+        methods.splice(existingPayLaterMethodIndex, 1);
+      }
+
+      methods.splice(regularPayPalMethodIndex, 0, { ...payPalPayLaterData });
     };
 
     EventBus.$on('checkout-before-placeOrder', invokePlaceOrder);
@@ -80,5 +102,6 @@ export {
   PaymentApplePay,
   PaymentGooglePay,
   PaymentPayPal,
+  PayPalPayLaterMessage,
   SET_PAYMENT_METHOD_NONCE_MUTATION
 };

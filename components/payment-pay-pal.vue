@@ -11,8 +11,9 @@
 </template>
 
 <script lang="ts">
+import { PropType } from 'vue';
 import { PayPalCheckoutCreatePaymentOptions } from 'braintree-web';
-import paypalCheckout, { PayPalCheckoutTokenizationOptions, ShippingOptionType } from 'braintree-web/dist/browser/paypal-checkout';
+import { PayPalCheckoutTokenizationOptions, ShippingOptionType } from 'braintree-web/dist/browser/paypal-checkout';
 
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 import PaymentMethod from 'src/modules/payment-braintree/mixins/PaymentMethod';
@@ -51,12 +52,18 @@ export default PaymentMethod.extend({
     isOrderPlacementDisabled: {
       type: Boolean,
       default: false
+    },
+    fundingSources: {
+      type: Array as PropType<paypal.FUNDING[]> | undefined,
+      default: undefined
     }
   },
   data () {
+    const renderedButtonByFundingSource: Record<paypal.FUNDING, any> = {};
+
     return {
-      paypalCheckoutInstance: undefined as braintree.PayPalCheckout | undefined,
-      isCancelled: false
+      isCancelled: false,
+      renderedButtonByFundingSource
     }
   },
   created (): void {
@@ -64,29 +71,20 @@ export default PaymentMethod.extend({
       return;
     }
 
-    this.createPaypalCheckoutInstance(this.braintreeClient);
+    this.createPaypalCheckoutInstance();
   },
   computed: {
     showPayPalButtonContainer (): boolean {
       return this.showContent && !this.isOrderPlacementDisabled;
+    },
+    paypalCheckoutInstance (): braintree.PayPalCheckout | undefined {
+      return this.$store.getters['braintree/paypalCheckoutInstance'];
     }
   },
   methods: {
-    async createPaypalCheckoutInstance (braintreeClient: braintree.Client): Promise<void> {
-      if (this.paypalCheckoutInstance) {
-        return;
-      }
-
+    async createPaypalCheckoutInstance (): Promise<void> {
       try {
-        this.paypalCheckoutInstance = await paypalCheckout.create({
-          client: braintreeClient
-        });
-
-        await this.paypalCheckoutInstance.loadPayPalSDK({
-          currency: this.currency,
-          intent: 'capture'
-        });
-
+        await this.$store.dispatch('braintree/ensurePayPalSdkLoaded');
         await this.onPayPalSdkLoaded();
       } catch (error) {
         Logger.error('Checkout instance creation error: ' + error, 'pay-pal')();
@@ -99,22 +97,36 @@ export default PaymentMethod.extend({
         return;
       }
 
-      const buttons = await paypal.Buttons({
-        onShippingChange: this.onPayPalShippingChange,
-        fundingSource: paypal.FUNDING.PAYPAL,
-        style: {
-          label: this.isExpressCheckout ? 'checkout' : 'pay',
-          color: 'blue',
-          height: 40,
-          disableMaxWidth: true
-        },
-        createOrder: this.onPayPalCreateOrder,
-        onApprove: this.onPayPalApprove,
-        onError: this.onPayPalError,
-        onCancel: this.onPayPalCancel
-      });
+      const fundingSources = this.fundingSources ? this.fundingSources : [paypal.FUNDING.PAYPAL, paypal.FUNDING.PAYLATER];
 
-      buttons.render('#pay-pal-button-container');
+      for (const item of Object.values(this.renderedButtonByFundingSource)) {
+        (item as any).close();
+      }
+
+      for (const paymentMethod of fundingSources) {
+        const button = await paypal.Buttons({
+          onShippingChange: this.onPayPalShippingChange,
+          fundingSource: paymentMethod,
+          style: {
+            label: this.isExpressCheckout ? 'checkout' : 'pay',
+            color: 'blue',
+            height: 40,
+            disableMaxWidth: true
+          },
+          createOrder: this.onPayPalCreateOrder,
+          onApprove: this.onPayPalApprove,
+          onError: this.onPayPalError,
+          onCancel: this.onPayPalCancel
+        });
+
+        if (!button.isEligible()) {
+          continue;
+        }
+
+        this.renderedButtonByFundingSource[paymentMethod] = button;
+
+        button.render('#pay-pal-button-container');
+      }
     },
     async onPayPalShippingChange (data: any, actions: any) {
       if (!this.isExpressCheckout) {
@@ -278,7 +290,12 @@ export default PaymentMethod.extend({
           return;
         }
 
-        this.createPaypalCheckoutInstance(val);
+        this.createPaypalCheckoutInstance();
+      }
+    },
+    fundingSources: {
+      handler () {
+        this.createPaypalCheckoutInstance();
       }
     }
   }
@@ -291,6 +308,8 @@ export default PaymentMethod.extend({
 .payment-pay-pal {
   ._pay-pal-button-container {
       display: flex;
+      flex-direction: column;
+      gap: var(--spacer-sm);
       margin: var(--spacer-sm) 0;
       justify-content: center;
       align-items: center;

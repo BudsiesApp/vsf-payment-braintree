@@ -1,12 +1,21 @@
 import { ActionTree } from 'vuex';
 import client, { Client } from 'braintree-web/dist/browser/client';
+import paypalCheckout from 'braintree-web/dist/browser/paypal-checkout';
 import config from 'config'
+import { isServer } from '@vue-storefront/core/helpers';
 import { adjustMultistoreApiUrl } from '@vue-storefront/core/lib/multistore'
 import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 
 import { BraintreeState } from '../types/BraintreeState'
-import { BEFORE_STORE_BACKEND_API_REQUEST } from 'src/modules/shared';
-import { SET_BRAINTREE_CLIENT, SET_BRAINTREE_CLIENT_CREATION_PROMISE, SET_BRAINTREE_CLIENT_EXPIRATION_DATE } from './mutation-types';
+import { BEFORE_STORE_BACKEND_API_REQUEST, DEFAULT_CURRENCY_CODE } from 'src/modules/shared';
+import {
+  SET_BRAINTREE_CLIENT,
+  SET_BRAINTREE_CLIENT_CREATION_PROMISE,
+  SET_BRAINTREE_CLIENT_EXPIRATION_DATE,
+  SET_PAYPAL_CHECKOUT_INSTANCE,
+  SET_PAYPAL_SDK_LOAD_PROMISE,
+  SET_IS_PAYPAL_SDK_LOADED
+} from './mutation-types';
 import { BRAINTREE_CLIENT_EXPIRATION_TIMEOUT } from '../types/braintree-client-expiration-timeout';
 
 // it's a good practice for all actions to return Promises with effect of their execution
@@ -118,5 +127,46 @@ export const actions: ActionTree<BraintreeState, any> = {
     commit(SET_BRAINTREE_CLIENT_CREATION_PROMISE, promise);
 
     return promise;
+  },
+  async ensurePayPalSdkLoaded ({ state, commit, dispatch }): Promise<void> {
+    if (isServer) {
+      return;
+    }
+
+    if (state.isPayPalSdkLoaded) {
+      return;
+    }
+
+    if (state.paypalSdkLoadPromise) {
+      return state.paypalSdkLoadPromise;
+    }
+
+    const loadPromise = (async (): Promise<void> => {
+      try {
+        const braintreeClient: Client = await dispatch('createBraintreeClient');
+
+        let checkoutInstance = state.paypalCheckoutInstance;
+
+        if (!checkoutInstance) {
+          checkoutInstance = await paypalCheckout.create({ client: braintreeClient });
+          commit(SET_PAYPAL_CHECKOUT_INSTANCE, checkoutInstance);
+        }
+
+        await checkoutInstance.loadPayPalSDK({
+          currency: DEFAULT_CURRENCY_CODE,
+          components: 'buttons,messages',
+          intent: 'capture',
+          'enable-funding': 'paylater'
+        });
+
+        commit(SET_IS_PAYPAL_SDK_LOADED, true);
+      } finally {
+        commit(SET_PAYPAL_SDK_LOAD_PROMISE, undefined);
+      }
+    })();
+
+    commit(SET_PAYPAL_SDK_LOAD_PROMISE, loadPromise);
+
+    return loadPromise;
   }
 }
