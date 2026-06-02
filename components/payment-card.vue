@@ -63,6 +63,8 @@ const enum Fields {
   CVV = 'cvv'
 }
 
+const fieldOrder: Fields[] = [Fields.NUMBER, Fields.CVV, Fields.EXPIRATION_DATE];
+
 export default PaymentMethod.extend({
   name: 'PaymentCard',
   data () {
@@ -120,6 +122,42 @@ export default PaymentMethod.extend({
     this.removeHostedFieldsEventListeners();
   },
   methods: {
+    getInvalidFields (): Fields[] {
+      return fieldOrder.filter((field) => !this.fieldsValidationState[field].isValid);
+    },
+    focusFirstInvalidField (): void {
+      const invalidField = this.getInvalidFields()[0];
+
+      if (!this.hostedFieldsInstance || !invalidField) {
+        return;
+      }
+
+      this.hostedFieldsInstance.focus(invalidField);
+    },
+    syncHostedFieldsAccessibility (): void {
+      const errorMessage = this.errorMessage
+        ? this.errorMessage.toString()
+        : '';
+
+      for (const field of fieldOrder) {
+        const isInvalid = !this.fieldsValidationState[field].isValid;
+
+        if (!this.hostedFieldsInstance) {
+          return;
+        }
+
+        this.hostedFieldsInstance.setAttribute({
+          field,
+          attribute: 'aria-invalid',
+          value: isInvalid ? 'true' : 'false'
+        });
+
+        this.hostedFieldsInstance.setMessage({
+          field,
+          message: isInvalid ? errorMessage : ''
+        });
+      }
+    },
     addHostedFieldsEventListeners (): void {
       if (!this.hostedFieldsInstance) {
         throw new Error('Hosted fields instance is undefined');
@@ -128,7 +166,7 @@ export default PaymentMethod.extend({
       this.fOnHostedFieldsBlur = this.onHostedFieldsBlur.bind(this);
       this.hostedFieldsInstance.on('blur', this.fOnHostedFieldsBlur);
 
-      this.fOnHostedFieldsFocus = (event) => {
+      this.fOnHostedFieldsFocus = async (event) => {
         this.fieldsValidationState[event.emittedBy].isValid = true;
       };
       this.hostedFieldsInstance.on('focus', this.fOnHostedFieldsFocus);
@@ -169,6 +207,7 @@ export default PaymentMethod.extend({
         });
 
         this.addHostedFieldsEventListeners();
+        this.syncHostedFieldsAccessibility();
       } catch (error) {
         EventBus.$emit(PAYMENT_ERROR_EVENT);
       }
@@ -197,6 +236,8 @@ export default PaymentMethod.extend({
       if (!this.showCvvError && !this.showExpirationDateError && !this.showNumberError) {
         this.errorMessage = '';
       }
+
+      this.syncHostedFieldsAccessibility();
     },
     async doPayment (): Promise<void> {
       this.errorMessage = '';
@@ -220,15 +261,19 @@ export default PaymentMethod.extend({
           })
         }
 
+        let showErrorNotification = true;
+
         switch (braintreeError.code) {
           case 'HOSTED_FIELDS_FIELDS_EMPTY':
             [Fields.EXPIRATION_DATE, Fields.NUMBER, Fields.CVV].forEach((key) => {
               this.fieldsValidationState[key].isValid = false;
-            })
+            });
             this.errorMessage = this.$t('Please, fill required fields');
+            showErrorNotification = false;
             break;
           case 'HOSTED_FIELDS_FIELDS_INVALID':
             this.errorMessage = this.$t('Some fields are invalid');
+            showErrorNotification = false;
             break;
           case 'HOSTED_FIELDS_TOKENIZATION_FAIL_ON_DUPLICATE':
             // https://developer.paypal.com/braintree/docs/reference/request/client-token/generate#options.fail_on_duplicate_payment_method
@@ -237,6 +282,7 @@ export default PaymentMethod.extend({
           case 'HOSTED_FIELDS_TOKENIZATION_CVV_VERIFICATION_FAILED':
             this.errorMessage = this.$t('CVV did not pass verification');
             this.fieldsValidationState[Fields.CVV].isValid = false;
+            showErrorNotification = false;
             break;
           case 'HOSTED_FIELDS_FAILED_TOKENIZATION':
             this.errorMessage = this.$t('Please, check credentials');
@@ -248,7 +294,11 @@ export default PaymentMethod.extend({
             this.errorMessage = this.$t('Something went wrong');
         }
 
-        EventBus.$emit(PAYMENT_ERROR_EVENT);
+        this.syncHostedFieldsAccessibility();
+
+        this.focusFirstInvalidField();
+
+        EventBus.$emit(PAYMENT_ERROR_EVENT, !showErrorNotification);
       }
     }
   },
