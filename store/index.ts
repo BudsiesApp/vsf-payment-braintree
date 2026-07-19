@@ -4,7 +4,7 @@ import { mutations } from './mutations'
 import { getters } from './getters'
 import { actions } from './actions'
 
-export const module: Module<BraintreeState, any> = {
+const storeModule: Module<BraintreeState, any> = {
   namespaced: true,
   state: {
     trans: [],
@@ -19,3 +19,5 @@ export const module: Module<BraintreeState, any> = {
   actions,
   getters
 }
+
+export { storeModule as module }
