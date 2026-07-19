@@ -27,8 +27,7 @@
     "@braintree/asset-loader": "2.0.3",
     "braintree": "^3.33.1",
     "braintree-web": "^3.127.0",
-    "braintree-web-drop-in": "^1.44.0",
-    "magento2-rest-client": "github:DivanteLtd/magento2-rest-client"
+    "braintree-web-drop-in": "^1.44.0"
   },
   "devDependencies": {
     "@types/braintree-web": "^3.96.17",

@@ -1,6 +1,5 @@
 import { apiStatus } from '../../../lib/util';
 import { Router } from 'express';
-const Magento2Client = require('magento2-rest-client').Magento2Client
 
 module.exports = ({ config, db }) => {
   let api = Router();
