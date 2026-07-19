@@ -48,7 +48,7 @@ export default PaymentMethod.extend({
   async created (): Promise<void> {
     if (!ApplePaySession) {
       await loadScript({
-        src: applePaySource,
+        src: applePaySource
       });
     }
 
@@ -107,10 +107,9 @@ export default PaymentMethod.extend({
           'postalAddress',
           'name',
           'phone',
-          'email',
+          'email'
         ];
       }
-
 
       const session = new ApplePaySession(3, paymentRequest);
 
