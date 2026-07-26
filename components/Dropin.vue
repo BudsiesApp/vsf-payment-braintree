@@ -3,6 +3,7 @@
 </template>
 
 <script>
+import EventBus from '@vue-storefront/core/compatibility/plugins/event-bus'
 import { currentStoreView } from '@vue-storefront/core/lib/multistore'
 import config from 'config'
 
@@ -65,7 +66,7 @@ export default {
                   // Submit payload.nonce to your server
                   self.nonce = payload.nonce
 
-                  self.$bus.$emit('checkout-do-placeOrder', {
+                  EventBus.$emit('checkout-do-placeOrder', {
                     payment_method_nonce: self.nonce,
                     budsies_payment_method_code: this.getPaymentMethodCode(payload.type)
                   })
