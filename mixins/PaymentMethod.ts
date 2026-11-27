@@ -54,6 +54,9 @@ export default (Vue as VueConstructor<Vue & InjectedServices>).extend({
     },
     isExpressCheckout (): boolean {
       return this.type === PaymentType.EXPRESS_CHECKOUT;
+    },
+    canInitiatePayment (): boolean {
+      return !this.isExpressCheckout || this.$store.getters['cart/canStartExpressCheckout'];
     }
   }
 });

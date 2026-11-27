@@ -106,6 +106,7 @@ export default PaymentMethod.extend({
       for (const paymentMethod of fundingSources) {
         const button = await paypal.Buttons({
           onShippingChange: this.onPayPalShippingChange,
+          onClick: (_data: any, actions: any) => this.canInitiatePayment ? actions.resolve() : actions.reject(),
           fundingSource: paymentMethod,
           style: {
             label: this.isExpressCheckout ? 'checkout' : 'pay',
