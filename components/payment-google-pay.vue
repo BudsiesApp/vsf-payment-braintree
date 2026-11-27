@@ -271,6 +271,7 @@ export default (PaymentMethod as VueConstructor<InstanceType<typeof PaymentMetho
       }
     },
     async doPayment () {
+      if (!this.canInitiatePayment) return;
       if (!this.googlePayCheckoutInstance) {
         throw new Error('GooglePay instance is undefined');
       }

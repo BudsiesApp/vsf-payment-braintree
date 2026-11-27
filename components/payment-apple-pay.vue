@@ -85,6 +85,7 @@ export default PaymentMethod.extend({
       }
     },
     doPayment () {
+      if (!this.canInitiatePayment) return;
       if (!this.applePayCheckoutInstance) {
         throw new Error('ApplePay instance is undefined');
       }
